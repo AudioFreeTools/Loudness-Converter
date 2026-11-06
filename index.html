@@ -3,15 +3,19 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
- <title>Loudness Converter & Audio Normalizer Online – Free LUFS & True Peak Limiter</title>
+  <title>Loudness Converter & Audio Normalizer Online – Free LUFS & True Peak Limiter</title>
   <meta name="description" content="Free online loudness converter and audio normalizer with transparent True Peak Limiter. Match Spotify (-14 LUFS), YouTube, Apple Music & EBU R128 standards fast and privately in your browser." />
   <meta name="keywords" content="loudness converter, audio normalizer online, lufs normalizer, true peak limiter, online audio mastering, spotify loudness converter, youtube audio normalizer, ebu r128 online, loudness matcher, fabfilter limiter online, auto gain audio, mp3 loudness adjust, wav normalizer free" />
   <meta name="robots" content="index, follow" />
   <meta property="og:title" content="Loudness Converter & Audio Normalizer Online" />
   <meta property="og:description" content="Normalize your audio to -14 LUFS, -16 LUFS or custom targets with integrated True Peak Limiter." />
   <meta property="og:type" content="website" />
+  
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <!-- LameJS para codificação MP3 embutida -->
+  <script src="https://cdn.jsdelivr.net/npm/lamejs@1.2.1/lame.min.js"></script>
+
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
     body {
@@ -24,7 +28,6 @@
     .profile-card.selected { border-color: #f4f4f5; background-color: #18181b; }
     input[type=range] { accent-color: #f4f4f5; }
     
-    /* Estilos para os espaços de anúncios laterais */
     .ad-sidebar {
       width: 160px;
       min-height: 600px;
@@ -49,13 +52,11 @@
 </head>
 <body class="min-h-screen flex flex-col items-center justify-center p-4 antialiased">
 
-  <!-- Container principal em 3 colunas para acomodar os banners nas laterais -->
   <div class="w-full max-w-6xl flex items-start justify-center gap-6 my-6">
     
     <!-- Banner Lateral Esquerdo (AdSense) -->
     <aside class="ad-sidebar hidden lg:flex shrink-0">
       <span class="uppercase tracking-wider text-[10px] text-[#52525b] mb-2">Anúncio</span>
-      <!-- Insira seu bloco de código do Google AdSense aqui -->
       <p class="text-[10px] text-[#52525b]">Espaço 160x600<br>AdSense / Banner</p>
     </aside>
 
@@ -108,6 +109,21 @@
               <span class="text-[9px] text-[#71717a] uppercase tracking-wider block">LRA</span>
               <span id="origLra" class="text-xs font-mono font-medium text-[#e4e4e7]">5.4 LU</span>
             </div>
+          </div>
+        </div>
+
+        <!-- Seletor de Formato de Saída -->
+        <div class="space-y-2">
+          <span class="text-[11px] font-medium uppercase tracking-wider text-[#71717a]">Formato de Saída</span>
+          <div class="grid grid-cols-2 gap-2">
+            <label class="flex items-center justify-center p-2.5 rounded-xl border border-[#3f3f46] bg-[#18181b] cursor-pointer text-xs font-medium text-[#f4f4f5] gap-2 hover:border-[#71717a]">
+              <input type="radio" name="outputFormat" value="wav" checked class="accent-[#f4f4f5]">
+              WAV (Sem Perdas)
+            </label>
+            <label class="flex items-center justify-center p-2.5 rounded-xl border border-[#27272a] bg-[#09090b] cursor-pointer text-xs font-medium text-[#a1a1aa] gap-2 hover:border-[#71717a]">
+              <input type="radio" name="outputFormat" value="mp3" class="accent-[#f4f4f5]">
+              MP3 (320 kbps)
+            </label>
           </div>
         </div>
 
@@ -210,7 +226,6 @@
     <!-- Banner Lateral Direito (AdSense) -->
     <aside class="ad-sidebar hidden lg:flex shrink-0">
       <span class="uppercase tracking-wider text-[10px] text-[#52525b] mb-2">Anúncio</span>
-      <!-- Insira seu bloco de código do Google AdSense aqui -->
       <p class="text-[10px] text-[#52525b]">Espaço 160x600<br>AdSense / Banner</p>
     </aside>
 
@@ -239,6 +254,22 @@
       toast.classList.remove('hidden');
       setTimeout(() => toast.classList.add('hidden'), 4000);
     }
+
+    // Gerenciamento visual do seletor de formato
+    document.querySelectorAll('input[name="outputFormat"]').forEach(radio => {
+      radio.addEventListener('change', (e) => {
+        document.querySelectorAll('input[name="outputFormat"]').forEach(r => {
+          const label = r.closest('label');
+          if (r.checked) {
+            label.classList.add('border-[#3f3f46]', 'bg-[#18181b]', 'text-[#f4f4f5]');
+            label.classList.remove('border-[#27272a]', 'bg-[#09090b]', 'text-[#a1a1aa]');
+          } else {
+            label.classList.remove('border-[#3f3f46]', 'bg-[#18181b]', 'text-[#f4f4f5]');
+            label.classList.add('border-[#27272a]', 'bg-[#09090b]', 'text-[#a1a1aa]');
+          }
+        });
+      });
+    });
 
     fileInput.addEventListener('change', (e) => {
       if (e.target.files.length) handleFile(e.target.files[0]);
@@ -402,78 +433,99 @@
         return;
       }
 
+      const format = document.querySelector('input[name="outputFormat"]:checked').value;
+
       loader.classList.remove('hidden');
-      loaderText.innerText = "Aplicando ganho de Loudness e Limiting transparente...";
+      loaderText.innerText = `Processando e convertendo para ${format.toUpperCase()}...`;
       audioList.innerHTML = '';
       generatedBlobs = [];
 
       setTimeout(() => {
-        for (const input of selectedInputs) {
-          let targetLufs = -14.0;
-          let ceilingTp = -1.0;
-          let profileLabel = "";
-          let profileKey = input.value;
-          let lufsSuffix = "";
-          let filePrefixKey = profileKey;
+        try {
+          for (const input of selectedInputs) {
+            let targetLufs = -14.0;
+            let ceilingTp = -1.0;
+            let profileLabel = "";
+            let profileKey = input.value;
+            let lufsSuffix = "";
+            let filePrefixKey = profileKey;
 
-          if (profileKey === 'digital') { 
-            targetLufs = -14.0; 
-            ceilingTp = -1.0; 
-            profileLabel = "Streaming (-14.0 LUFS)"; 
-            lufsSuffix = "-14.0LUFS";
-          }
-          else if (profileKey === 'ebu_r128') { 
-            targetLufs = -23.0; 
-            ceilingTp = -1.0; 
-            profileLabel = "TV EBU R128 (-23.0 LUFS)"; 
-            lufsSuffix = "-23.0LUFS";
-          }
-          else if (profileKey === 'advanced') {
-            targetLufs = parseFloat(sliderLufs.value);
-            ceilingTp = parseFloat(sliderTp.value);
-            const formattedVal = targetLufs.toFixed(1);
-            profileLabel = `Personalizado (${formattedVal} LUFS)`;
-            lufsSuffix = `${formattedVal}LUFS`;
-            filePrefixKey = 'custom';
-          }
+            if (profileKey === 'digital') { 
+              targetLufs = -14.0; 
+              ceilingTp = -1.0; 
+              profileLabel = "Streaming (-14.0 LUFS)"; 
+              lufsSuffix = "-14.0LUFS";
+            }
+            else if (profileKey === 'ebu_r128') { 
+              targetLufs = -23.0; 
+              ceilingTp = -1.0; 
+              profileLabel = "TV EBU R128 (-23.0 LUFS)"; 
+              lufsSuffix = "-23.0LUFS";
+            }
+            else if (profileKey === 'advanced') {
+              targetLufs = parseFloat(sliderLufs.value);
+              ceilingTp = parseFloat(sliderTp.value);
+              const formattedVal = targetLufs.toFixed(1);
+              profileLabel = `Personalizado (${formattedVal} LUFS)`;
+              lufsSuffix = `${formattedVal}LUFS`;
+              filePrefixKey = 'custom';
+            }
 
-          const wavBlob = renderAudioProfile(audioBuffer, detectedLufs, targetLufs, ceilingTp);
-          const audioUrl = URL.createObjectURL(wavBlob);
-          const fileName = `${originalFile.name.split('.')[0]}_${filePrefixKey}_${lufsSuffix}.wav`;
+            const processedPcm = processAudioPCM(audioBuffer, detectedLufs, targetLufs, ceilingTp);
+            let finalBlob;
+            let fileExt = format;
+            let mimeType = format === 'mp3' ? 'audio/mpeg' : 'audio/wav';
 
-          generatedBlobs.push({ name: fileName, blob: wavBlob });
+            if (format === 'mp3' && typeof lamejs !== 'undefined') {
+              finalBlob = encodeMp3(processedPcm, audioBuffer.sampleRate, audioBuffer.numberOfChannels);
+            } else {
+              fileExt = 'wav';
+              mimeType = 'audio/wav';
+              finalBlob = encodeWav(processedPcm, audioBuffer.sampleRate, audioBuffer.numberOfChannels);
+            }
 
-          const card = document.createElement('div');
-          card.className = "bg-[#09090b] border border-[#27272a] rounded-xl p-3 space-y-2";
-          card.innerHTML = `
-            <div class="flex justify-between items-center text-xs">
-              <span class="font-medium text-[#f4f4f5]">${profileLabel}</span>
-              <span class="text-[10px] text-[#71717a] font-mono">${fileName}</span>
-            </div>
-            <audio controls class="audio-player w-full h-8 accent-[#f4f4f5] bg-transparent">
-              <source src="${audioUrl}" type="audio/wav">
-            </audio>
-            <a href="${audioUrl}" download="${fileName}" class="inline-flex items-center justify-center w-full bg-[#18181b] hover:bg-[#27272a] border border-[#27272a] text-[#f4f4f5] text-[11px] font-medium py-1.5 rounded-lg transition-colors gap-1.5">
-              <svg class="w-3.5 h-3.5 text-[#a1a1aa]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
-              </svg>
-              Baixar WAV
-            </a>
-          `;
+            const audioUrl = URL.createObjectURL(finalBlob);
+            const fileName = `${originalFile.name.split('.')[0]}_${filePrefixKey}_${lufsSuffix}.${fileExt}`;
 
-          const audioElement = card.querySelector('audio');
-          audioElement.addEventListener('play', function() {
-            document.querySelectorAll('audio.audio-player').forEach(player => {
-              if (player !== audioElement) player.pause();
+            generatedBlobs.push({ name: fileName, blob: finalBlob });
+
+            const card = document.createElement('div');
+            card.className = "bg-[#09090b] border border-[#27272a] rounded-xl p-3 space-y-2";
+            card.innerHTML = `
+              <div class="flex justify-between items-center text-xs">
+                <span class="font-medium text-[#f4f4f5]">${profileLabel}</span>
+                <span class="text-[10px] text-[#71717a] font-mono">${fileName}</span>
+              </div>
+              <audio controls class="audio-player w-full h-8 accent-[#f4f4f5] bg-transparent">
+                <source src="${audioUrl}" type="${mimeType}">
+              </audio>
+              <a href="${audioUrl}" download="${fileName}" class="inline-flex items-center justify-center w-full bg-[#18181b] hover:bg-[#27272a] border border-[#27272a] text-[#f4f4f5] text-[11px] font-medium py-1.5 rounded-lg transition-colors gap-1.5">
+                <svg class="w-3.5 h-3.5 text-[#a1a1aa]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                </svg>
+                Baixar ${fileExt.toUpperCase()}
+              </a>
+            `;
+
+            const audioElement = card.querySelector('audio');
+            audioElement.addEventListener('play', function() {
+              document.querySelectorAll('audio.audio-player').forEach(player => {
+                if (player !== audioElement) player.pause();
+              });
             });
-          });
 
-          audioList.appendChild(card);
+            audioList.appendChild(card);
+          }
+
+          loader.classList.add('hidden');
+          resultsContainer.classList.remove('hidden');
+
+        } catch (err) {
+          console.error(err);
+          showToast("Erro durante o processamento. Tente novamente.");
+          loader.classList.add('hidden');
         }
-
-        loader.classList.add('hidden');
-        resultsContainer.classList.remove('hidden');
-      }, 200);
+      }, 100);
     });
 
     document.getElementById('downloadZipBtn').addEventListener('click', async () => {
@@ -491,7 +543,8 @@
       link.click();
     });
 
-    function renderAudioProfile(buffer, currentLufs, targetLufs, ceilingDb) {
+    // Processador de áudio (Gain + Limiter)
+    function processAudioPCM(buffer, currentLufs, targetLufs, ceilingDb) {
       const numChannels = buffer.numberOfChannels;
       const length = buffer.length;
       const sampleRate = buffer.sampleRate;
@@ -500,11 +553,47 @@
       const globalGain = Math.pow(10, lufsDifference / 20);
       const ceilingLinear = Math.pow(10, ceilingDb / 20);
 
-      const attackSec = 0.001; 
-      const releaseSec = 0.050; 
-      const attackCoeff = Math.exp(-1.0 / (sampleRate * attackSec));
-      const releaseCoeff = Math.exp(-1.0 / (sampleRate * releaseSec));
+      const attackCoeff = Math.exp(-1.0 / (sampleRate * 0.001));
+      const releaseCoeff = Math.exp(-1.0 / (sampleRate * 0.050));
 
+      const channelsPCM = [];
+      for (let ch = 0; ch < numChannels; ch++) {
+        channelsPCM.push(new Int16Array(length));
+      }
+
+      let envelope = 0;
+
+      for (let i = 0; i < length; i++) {
+        let maxSamplePeak = 0;
+        for (let ch = 0; ch < numChannels; ch++) {
+          const s = Math.abs(buffer.getChannelData(ch)[i] * globalGain);
+          if (s > maxSamplePeak) maxSamplePeak = s;
+        }
+
+        if (maxSamplePeak > envelope) {
+          envelope = attackCoeff * envelope + (1 - attackCoeff) * maxSamplePeak;
+        } else {
+          envelope = releaseCoeff * envelope + (1 - releaseCoeff) * maxSamplePeak;
+        }
+
+        let gainReduction = 1.0;
+        if (envelope > ceilingLinear) {
+          gainReduction = ceilingLinear / envelope;
+        }
+
+        for (let ch = 0; ch < numChannels; ch++) {
+          let sample = buffer.getChannelData(ch)[i] * globalGain * gainReduction;
+          const s = Math.max(-1, Math.min(1, sample));
+          channelsPCM[ch][i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+        }
+      }
+
+      return channelsPCM;
+    }
+
+    // Encoder WAV
+    function encodeWav(channelsPCM, sampleRate, numChannels) {
+      const length = channelsPCM[0].length;
       const wavBuffer = new ArrayBuffer(44 + length * numChannels * 2);
       const view = new DataView(wavBuffer);
 
@@ -529,35 +618,35 @@
       view.setUint32(40, length * numChannels * 2, true);
 
       let offset = 44;
-      let envelope = 0;
-
       for (let i = 0; i < length; i++) {
-        let maxSamplePeak = 0;
         for (let ch = 0; ch < numChannels; ch++) {
-          const s = Math.abs(buffer.getChannelData(ch)[i] * globalGain);
-          if (s > maxSamplePeak) maxSamplePeak = s;
-        }
-
-        if (maxSamplePeak > envelope) {
-          envelope = attackCoeff * envelope + (1 - attackCoeff) * maxSamplePeak;
-        } else {
-          envelope = releaseCoeff * envelope + (1 - releaseCoeff) * maxSamplePeak;
-        }
-
-        let gainReduction = 1.0;
-        if (envelope > ceilingLinear) {
-          gainReduction = ceilingLinear / envelope;
-        }
-
-        for (let ch = 0; ch < numChannels; ch++) {
-          let sample = buffer.getChannelData(ch)[i] * globalGain * gainReduction;
-          const s = Math.max(-1, Math.min(1, sample));
-          view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+          view.setInt16(offset, channelsPCM[ch][i], true);
           offset += 2;
         }
       }
 
       return new Blob([wavBuffer], { type: 'audio/wav' });
+    }
+
+    // Encoder MP3 (via lamejs de forma segura)
+    function encodeMp3(channelsPCM, sampleRate, numChannels) {
+      const mp3encoder = new lamejs.Mp3Encoder(numChannels, sampleRate, 320);
+      const mp3Data = [];
+      const sampleBlockSize = 1152;
+      const length = channelsPCM[0].length;
+
+      for (let i = 0; i < length; i += sampleBlockSize) {
+        let leftChunk = channelsPCM[0].subarray(i, i + sampleBlockSize);
+        let rightChunk = numChannels > 1 ? channelsPCM[1].subarray(i, i + sampleBlockSize) : leftChunk;
+        
+        let mp3buf = mp3encoder.encodeBuffer(leftChunk, rightChunk);
+        if (mp3buf.length > 0) mp3Data.push(mp3buf);
+      }
+
+      let mp3buf = mp3encoder.flush();
+      if (mp3buf.length > 0) mp3Data.push(mp3buf);
+
+      return new Blob(mp3Data, { type: 'audio/mpeg' });
     }
   </script>
 </body>
