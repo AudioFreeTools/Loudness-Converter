@@ -132,24 +132,17 @@
             </label>
           </div>
 
-          <!-- Sub-Presets Musicais -->
+          <!-- Sub-Presets Musicais (Modern & Smooth) -->
           <div id="musicPresetsContainer" class="hidden pt-1 space-y-1.5">
             <span class="text-[10px] text-[#71717a] font-medium uppercase tracking-wider">Perfil Dinâmico Musical</span>
-            <div class="grid grid-cols-3 gap-2">
-              <label class="preset-card selected flex flex-col items-center justify-center p-2 rounded-lg border border-[#f4f4f5] bg-[#18181b] cursor-pointer transition-colors text-center">
+            <div class="grid grid-cols-2 gap-2">
+              <label class="preset-card selected flex items-center justify-center p-2.5 rounded-lg border border-[#f4f4f5] bg-[#18181b] cursor-pointer transition-colors text-center">
                 <input type="radio" name="musicPreset" value="modern" checked class="preset-radio hidden">
-                <span class="text-[11px] font-medium text-[#f4f4f5]">Modern</span>
-                <span class="text-[8px] text-[#71717a]">Equilibrado</span>
+                <span class="text-xs font-medium text-[#f4f4f5]">Modern</span>
               </label>
-              <label class="preset-card flex flex-col items-center justify-center p-2 rounded-lg border border-[#27272a] bg-[#09090b] cursor-pointer transition-colors text-center">
+              <label class="preset-card flex items-center justify-center p-2.5 rounded-lg border border-[#27272a] bg-[#09090b] cursor-pointer transition-colors text-center">
                 <input type="radio" name="musicPreset" value="smooth" class="preset-radio hidden">
-                <span class="text-[11px] font-medium text-[#a1a1aa]">Smooth</span>
-                <span class="text-[8px] text-[#71717a]">Acústico/Leve</span>
-              </label>
-              <label class="preset-card flex flex-col items-center justify-center p-2 rounded-lg border border-[#27272a] bg-[#09090b] cursor-pointer transition-colors text-center">
-                <input type="radio" name="musicPreset" value="tight" class="preset-radio hidden">
-                <span class="text-[11px] font-medium text-[#a1a1aa]">Tight</span>
-                <span class="text-[8px] text-[#71717a]">Beats/Punch</span>
+                <span class="text-xs font-medium text-[#a1a1aa]">Smooth</span>
               </label>
             </div>
           </div>
@@ -547,23 +540,17 @@
       }
 
       const audioType = document.querySelector('input[name="audioType"]:checked').value;
-      let attackMs = 0.001; 
-      let releaseMs = 0.050; 
+      let attackMs = 0.005; // Padrão voz
+      let releaseMs = 0.150; // Padrão voz
 
-      if (audioType === 'voice') {
-        attackMs = 0.005; 
-        releaseMs = 0.150; 
-      } else if (audioType === 'music') {
+      if (audioType === 'music') {
         const musicPreset = document.querySelector('input[name="musicPreset"]:checked').value;
         if (musicPreset === 'modern') {
-          attackMs = 0.001;  
-          releaseMs = 0.050; 
+          attackMs = 0.030;  // 30ms (Estilo SSL Bus Compressor)
+          releaseMs = 0.100; // 100ms (Release equilibrado para colar a mix)
         } else if (musicPreset === 'smooth') {
-          attackMs = 0.010;  
-          releaseMs = 0.200; 
-        } else if (musicPreset === 'tight') {
-          attackMs = 0.0005; 
-          releaseMs = 0.030; 
+          attackMs = 0.010;  // 10ms
+          releaseMs = 0.050; // 50ms (Release mais rápido e transparente)
         }
       }
 
@@ -697,7 +684,7 @@
       link.click();
     });
 
-    // Processador de áudio com Limiter independente do ganho estático (True Attenuation)
+    // Processador de áudio com True Attenuation e parâmetros customizados
     function processAudioPCM(buffer, currentLufs, targetLufs, ceilingDb, attackSec, releaseSec) {
       const numChannels = buffer.numberOfChannels;
       const length = buffer.length;
@@ -718,7 +705,6 @@
       let envelope = 0;
 
       for (let i = 0; i < length; i++) {
-        // Primeiro aplica o ganho estático de loudness em todas as amostras
         let maxSamplePeak = 0;
         let scaledSamples = new Float32Array(numChannels);
         
@@ -728,7 +714,6 @@
           if (abs > maxSamplePeak) maxSamplePeak = abs;
         }
 
-        // O limiter dinâmico só age se o sinal pós-ganho realmente ultrapassar o teto configurado
         if (maxSamplePeak > envelope) {
           envelope = attackCoeff * envelope + (1 - attackCoeff) * maxSamplePeak;
         } else {
