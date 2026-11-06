@@ -112,6 +112,49 @@
           </div>
         </div>
 
+        <!-- Seletor de Tipo de Conteúdo (Geral vs Música + Sub-presets) -->
+        <div class="space-y-3">
+          <div class="flex justify-between items-center">
+            <span class="text-[11px] font-medium uppercase tracking-wider text-[#71717a]">Tipo de Conteúdo & Caráter</span>
+            <span class="text-[10px] text-[#52525b]">Ajuste fino de limiter</span>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2">
+            <label class="category-card selected flex flex-col justify-center p-3 rounded-xl border border-[#f4f4f5] bg-[#18181b] cursor-pointer text-xs font-medium text-[#f4f4f5] transition-colors">
+              <input type="radio" name="audioType" value="voice" checked class="category-radio hidden">
+              <span class="font-medium text-xs">Geral / Voz</span>
+              <span class="text-[9px] text-[#71717a] mt-0.5">Locução, Podcast, Comercial</span>
+            </label>
+            <label class="category-card flex flex-col justify-center p-3 rounded-xl border border-[#27272a] bg-[#09090b] cursor-pointer text-xs font-medium text-[#a1a1aa] transition-colors">
+              <input type="radio" name="audioType" value="music" class="category-radio hidden">
+              <span class="font-medium text-xs">Música</span>
+              <span class="text-[9px] text-[#71717a] mt-0.5">Faixas & Masters</span>
+            </label>
+          </div>
+
+          <!-- Sub-Presets Musicais (exibidos somente ao escolher Música) -->
+          <div id="musicPresetsContainer" class="hidden pt-1 space-y-1.5">
+            <span class="text-[10px] text-[#71717a] font-medium uppercase tracking-wider">Perfil Dinâmico Musical</span>
+            <div class="grid grid-cols-3 gap-2">
+              <label class="preset-card selected flex flex-col items-center justify-center p-2 rounded-lg border border-[#f4f4f5] bg-[#18181b] cursor-pointer transition-colors text-center">
+                <input type="radio" name="musicPreset" value="modern" checked class="preset-radio hidden">
+                <span class="text-[11px] font-medium text-[#f4f4f5]">Modern</span>
+                <span class="text-[8px] text-[#71717a]">Equilibrado</span>
+              </label>
+              <label class="preset-card flex flex-col items-center justify-center p-2 rounded-lg border border-[#27272a] bg-[#09090b] cursor-pointer transition-colors text-center">
+                <input type="radio" name="musicPreset" value="smooth" class="preset-radio hidden">
+                <span class="text-[11px] font-medium text-[#a1a1aa]">Smooth</span>
+                <span class="text-[8px] text-[#71717a]">Acústico/Leve</span>
+              </label>
+              <label class="preset-card flex flex-col items-center justify-center p-2 rounded-lg border border-[#27272a] bg-[#09090b] cursor-pointer transition-colors text-center">
+                <input type="radio" name="musicPreset" value="tight" class="preset-radio hidden">
+                <span class="text-[11px] font-medium text-[#a1a1aa]">Tight</span>
+                <span class="text-[8px] text-[#71717a]">Beats/Punch</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
         <!-- Seletor Múltiplo de Formatos de Saída -->
         <div class="space-y-2">
           <div class="flex justify-between items-center">
@@ -257,12 +300,57 @@
     const toast = document.getElementById('toast');
     const resultsContainer = document.getElementById('resultsContainer');
     const audioList = document.getElementById('audioList');
+    const musicPresetsContainer = document.getElementById('musicPresetsContainer');
 
     function showToast(msg) {
       toast.innerText = msg;
       toast.classList.remove('hidden');
       setTimeout(() => toast.classList.add('hidden'), 4000);
     }
+
+    // Gerenciamento visual da Categoria (Voz/Geral vs Música)
+    document.querySelectorAll('.category-card').forEach(card => {
+      const radio = card.querySelector('.category-radio');
+      card.addEventListener('click', () => {
+        document.querySelectorAll('.category-card').forEach(c => {
+          c.classList.remove('border-[#f4f4f5]', 'bg-[#18181b]');
+          c.classList.add('border-[#27272a]', 'bg-[#09090b]');
+          c.querySelector('span').classList.remove('text-[#f4f4f5]');
+          c.querySelector('span').classList.add('text-[#a1a1aa]');
+        });
+
+        radio.checked = true;
+        card.classList.add('border-[#f4f4f5]', 'bg-[#18181b]');
+        card.classList.remove('border-[#27272a]', 'bg-[#09090b]');
+        card.querySelector('span').classList.add('text-[#f4f4f5]');
+        card.querySelector('span').classList.remove('text-[#a1a1aa]');
+
+        if (radio.value === 'music') {
+          musicPresetsContainer.classList.remove('hidden');
+        } else {
+          musicPresetsContainer.classList.add('hidden');
+        }
+      });
+    });
+
+    // Gerenciamento visual dos Sub-Presets Musicais
+    document.querySelectorAll('.preset-card').forEach(card => {
+      const radio = card.querySelector('.preset-radio');
+      card.addEventListener('click', () => {
+        document.querySelectorAll('.preset-card').forEach(p => {
+          p.classList.remove('border-[#f4f4f5]', 'bg-[#18181b]');
+          p.classList.add('border-[#27272a]', 'bg-[#09090b]');
+          p.querySelector('span').classList.remove('text-[#f4f4f5]');
+          p.querySelector('span').classList.add('text-[#a1a1aa]');
+        });
+
+        radio.checked = true;
+        card.classList.add('border-[#f4f4f5]', 'bg-[#18181b]');
+        card.classList.remove('border-[#27272a]', 'bg-[#09090b]');
+        card.querySelector('span').classList.add('text-[#f4f4f5]');
+        card.querySelector('span').classList.remove('text-[#a1a1aa]');
+      });
+    });
 
     // Gerenciamento visual do seletor múltiplo de formatos
     document.querySelectorAll('.format-card').forEach(card => {
@@ -461,6 +549,28 @@
         return;
       }
 
+      // Identifica a escolha de categoria e preset para ajustar attack e release
+      const audioType = document.querySelector('input[name="audioType"]:checked').value;
+      let attackMs = 0.001; // 1ms
+      let releaseMs = 0.050; // 50ms
+
+      if (audioType === 'voice') {
+        attackMs = 0.005; // 5ms (preserva articulação da voz)
+        releaseMs = 0.150; // 150ms (evita bombeamento no silêncio da voz)
+      } else if (audioType === 'music') {
+        const musicPreset = document.querySelector('input[name="musicPreset"]:checked').value;
+        if (musicPreset === 'modern') {
+          attackMs = 0.001;  // 1ms
+          releaseMs = 0.050; // 50ms
+        } else if (musicPreset === 'smooth') {
+          attackMs = 0.010;  // 10ms
+          releaseMs = 0.200; // 200ms
+        } else if (musicPreset === 'tight') {
+          attackMs = 0.0005; // 0.5ms
+          releaseMs = 0.030; // 30ms
+        }
+      }
+
       loader.classList.remove('hidden');
       loaderText.innerText = "Processando perfis e convertendo áudios...";
       audioList.innerHTML = '';
@@ -497,16 +607,14 @@
               filePrefixKey = 'custom';
             }
 
-            const processedPcm = processAudioPCM(audioBuffer, detectedLufs, targetLufs, ceilingTp);
+            const processedPcm = processAudioPCM(audioBuffer, detectedLufs, targetLufs, ceilingTp, attackMs, releaseMs);
 
-            // Gera sempre o áudio WAV (sem perdas) para o player e para o download WAV
             const wavBlob = encodeWav(processedPcm, audioBuffer.sampleRate, audioBuffer.numberOfChannels);
             const playerAudioUrl = URL.createObjectURL(wavBlob);
             const baseFileName = `${originalFile.name.split('.')[0]}_${filePrefixKey}_${lufsSuffix}`;
 
             let downloadButtonsHtml = '';
 
-            // Se WAV estiver selecionado
             if (selectedFormats.includes('wav')) {
               const wavFileName = `${baseFileName}.wav`;
               generatedBlobs.push({ name: wavFileName, blob: wavBlob });
@@ -521,7 +629,6 @@
               `;
             }
 
-            // Se MP3 estiver selecionado
             if (selectedFormats.includes('mp3')) {
               let mp3Blob;
               if (typeof lamejs !== 'undefined') {
@@ -594,8 +701,8 @@
       link.click();
     });
 
-    // Processador de áudio (Gain + Limiter)
-    function processAudioPCM(buffer, currentLufs, targetLufs, ceilingDb) {
+    // Processador de áudio com parâmetros dinâmicos de Attack e Release
+    function processAudioPCM(buffer, currentLufs, targetLufs, ceilingDb, attackSec, releaseSec) {
       const numChannels = buffer.numberOfChannels;
       const length = buffer.length;
       const sampleRate = buffer.sampleRate;
@@ -604,8 +711,8 @@
       const globalGain = Math.pow(10, lufsDifference / 20);
       const ceilingLinear = Math.pow(10, ceilingDb / 20);
 
-      const attackCoeff = Math.exp(-1.0 / (sampleRate * 0.001));
-      const releaseCoeff = Math.exp(-1.0 / (sampleRate * 0.050));
+      const attackCoeff = Math.exp(-1.0 / (sampleRate * attackSec));
+      const releaseCoeff = Math.exp(-1.0 / (sampleRate * releaseSec));
 
       const channelsPCM = [];
       for (let ch = 0; ch < numChannels; ch++) {
