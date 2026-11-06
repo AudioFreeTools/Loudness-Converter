@@ -112,17 +112,26 @@
           </div>
         </div>
 
-        <!-- Seletor de Formato de Saída -->
+        <!-- Seletor Múltiplo de Formatos de Saída -->
         <div class="space-y-2">
-          <span class="text-[11px] font-medium uppercase tracking-wider text-[#71717a]">Formato de Saída</span>
+          <div class="flex justify-between items-center">
+            <span class="text-[11px] font-medium uppercase tracking-wider text-[#71717a]">Formatos de Saída</span>
+            <span class="text-[10px] text-[#52525b]">Múltipla escolha</span>
+          </div>
           <div class="grid grid-cols-2 gap-2">
-            <label class="flex items-center justify-center p-2.5 rounded-xl border border-[#3f3f46] bg-[#18181b] cursor-pointer text-xs font-medium text-[#f4f4f5] gap-2 hover:border-[#71717a]">
-              <input type="radio" name="outputFormat" value="wav" checked class="accent-[#f4f4f5]">
-              WAV (Sem Perdas)
+            <label class="format-card selected flex items-center p-3 rounded-xl border border-[#f4f4f5] bg-[#18181b] cursor-pointer text-xs font-medium text-[#f4f4f5] gap-2.5 transition-colors">
+              <input type="checkbox" value="wav" checked class="format-checkbox hidden">
+              <div class="format-check w-4 h-4 rounded border flex items-center justify-center bg-[#f4f4f5] border-[#f4f4f5]">
+                <svg class="w-3 h-3 text-[#09090b]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
+              </div>
+              <span>WAV (Sem Perdas)</span>
             </label>
-            <label class="flex items-center justify-center p-2.5 rounded-xl border border-[#27272a] bg-[#09090b] cursor-pointer text-xs font-medium text-[#a1a1aa] gap-2 hover:border-[#71717a]">
-              <input type="radio" name="outputFormat" value="mp3" class="accent-[#f4f4f5]">
-              MP3 (320 kbps)
+            <label class="format-card flex items-center p-3 rounded-xl border border-[#27272a] bg-[#09090b] cursor-pointer text-xs font-medium text-[#a1a1aa] gap-2.5 transition-colors">
+              <input type="checkbox" value="mp3" class="format-checkbox hidden">
+              <div class="format-check w-4 h-4 rounded border border-[#3f3f46] flex items-center justify-center">
+                <svg class="w-3 h-3 text-[#09090b] hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
+              </div>
+              <span>MP3 (320 kbps)</span>
             </label>
           </div>
         </div>
@@ -255,19 +264,32 @@
       setTimeout(() => toast.classList.add('hidden'), 4000);
     }
 
-    // Gerenciamento visual do seletor de formato
-    document.querySelectorAll('input[name="outputFormat"]').forEach(radio => {
-      radio.addEventListener('change', (e) => {
-        document.querySelectorAll('input[name="outputFormat"]').forEach(r => {
-          const label = r.closest('label');
-          if (r.checked) {
-            label.classList.add('border-[#3f3f46]', 'bg-[#18181b]', 'text-[#f4f4f5]');
-            label.classList.remove('border-[#27272a]', 'bg-[#09090b]', 'text-[#a1a1aa]');
-          } else {
-            label.classList.remove('border-[#3f3f46]', 'bg-[#18181b]', 'text-[#f4f4f5]');
-            label.classList.add('border-[#27272a]', 'bg-[#09090b]', 'text-[#a1a1aa]');
-          }
-        });
+    // Gerenciamento visual do seletor múltiplo de formatos
+    document.querySelectorAll('.format-card').forEach(card => {
+      const checkbox = card.querySelector('.format-checkbox');
+      card.addEventListener('click', () => {
+        checkbox.checked = !checkbox.checked;
+        const icon = card.querySelector('.format-check svg');
+        const box = card.querySelector('.format-check');
+        const textSpan = card.querySelector('span:last-child');
+
+        if (checkbox.checked) {
+          card.classList.add('border-[#f4f4f5]', 'bg-[#18181b]');
+          card.classList.remove('border-[#27272a]', 'bg-[#09090b]');
+          textSpan.classList.add('text-[#f4f4f5]');
+          textSpan.classList.remove('text-[#a1a1aa]');
+          box.classList.add('bg-[#f4f4f5]', 'border-[#f4f4f5]');
+          box.classList.remove('border-[#3f3f46]');
+          icon.classList.remove('hidden');
+        } else {
+          card.classList.remove('border-[#f4f4f5]', 'bg-[#18181b]');
+          card.classList.add('border-[#27272a]', 'bg-[#09090b]');
+          textSpan.classList.remove('text-[#f4f4f5]');
+          textSpan.classList.add('text-[#a1a1aa]');
+          box.classList.remove('bg-[#f4f4f5]', 'border-[#f4f4f5]');
+          box.classList.add('border-[#3f3f46]');
+          icon.classList.add('hidden');
+        }
       });
     });
 
@@ -428,15 +450,19 @@
 
     document.getElementById('processBtn').addEventListener('click', async () => {
       const selectedInputs = Array.from(document.querySelectorAll('.profile-checkbox:checked'));
+      const selectedFormats = Array.from(document.querySelectorAll('.format-checkbox:checked')).map(cb => cb.value);
+
       if (!selectedInputs.length) {
         showToast("Selecione ao menos um perfil de entrega.");
         return;
       }
-
-      const format = document.querySelector('input[name="outputFormat"]:checked').value;
+      if (!selectedFormats.length) {
+        showToast("Selecione ao menos um formato de saída (WAV ou MP3).");
+        return;
+      }
 
       loader.classList.remove('hidden');
-      loaderText.innerText = `Processando e convertendo para ${format.toUpperCase()}...`;
+      loaderText.innerText = "Processando perfis e convertendo áudios...";
       audioList.innerHTML = '';
       generatedBlobs = [];
 
@@ -471,50 +497,55 @@
               filePrefixKey = 'custom';
             }
 
+            // Processa o áudio bruto uma vez para este perfil
             const processedPcm = processAudioPCM(audioBuffer, detectedLufs, targetLufs, ceilingTp);
-            let finalBlob;
-            let fileExt = format;
-            let mimeType = format === 'mp3' ? 'audio/mpeg' : 'audio/wav';
 
-            if (format === 'mp3' && typeof lamejs !== 'undefined') {
-              finalBlob = encodeMp3(processedPcm, audioBuffer.sampleRate, audioBuffer.numberOfChannels);
-            } else {
-              fileExt = 'wav';
-              mimeType = 'audio/wav';
-              finalBlob = encodeWav(processedPcm, audioBuffer.sampleRate, audioBuffer.numberOfChannels);
-            }
+            // Para cada formato selecionado (wav, mp3 ou ambos), gera o arquivo correspondente
+            for (const format of selectedFormats) {
+              let finalBlob;
+              let fileExt = format;
+              let mimeType = format === 'mp3' ? 'audio/mpeg' : 'audio/wav';
 
-            const audioUrl = URL.createObjectURL(finalBlob);
-            const fileName = `${originalFile.name.split('.')[0]}_${filePrefixKey}_${lufsSuffix}.${fileExt}`;
+              if (format === 'mp3' && typeof lamejs !== 'undefined') {
+                finalBlob = encodeMp3(processedPcm, audioBuffer.sampleRate, audioBuffer.numberOfChannels);
+              } else {
+                fileExt = 'wav';
+                mimeType = 'audio/wav';
+                finalBlob = encodeWav(processedPcm, audioBuffer.sampleRate, audioBuffer.numberOfChannels);
+              }
 
-            generatedBlobs.push({ name: fileName, blob: finalBlob });
+              const audioUrl = URL.createObjectURL(finalBlob);
+              const fileName = `${originalFile.name.split('.')[0]}_${filePrefixKey}_${lufsSuffix}.${fileExt}`;
 
-            const card = document.createElement('div');
-            card.className = "bg-[#09090b] border border-[#27272a] rounded-xl p-3 space-y-2";
-            card.innerHTML = `
-              <div class="flex justify-between items-center text-xs">
-                <span class="font-medium text-[#f4f4f5]">${profileLabel}</span>
-                <span class="text-[10px] text-[#71717a] font-mono">${fileName}</span>
-              </div>
-              <audio controls class="audio-player w-full h-8 accent-[#f4f4f5] bg-transparent">
-                <source src="${audioUrl}" type="${mimeType}">
-              </audio>
-              <a href="${audioUrl}" download="${fileName}" class="inline-flex items-center justify-center w-full bg-[#18181b] hover:bg-[#27272a] border border-[#27272a] text-[#f4f4f5] text-[11px] font-medium py-1.5 rounded-lg transition-colors gap-1.5">
-                <svg class="w-3.5 h-3.5 text-[#a1a1aa]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
-                </svg>
-                Baixar ${fileExt.toUpperCase()}
-              </a>
-            `;
+              generatedBlobs.push({ name: fileName, blob: finalBlob });
 
-            const audioElement = card.querySelector('audio');
-            audioElement.addEventListener('play', function() {
-              document.querySelectorAll('audio.audio-player').forEach(player => {
-                if (player !== audioElement) player.pause();
+              const card = document.createElement('div');
+              card.className = "bg-[#09090b] border border-[#27272a] rounded-xl p-3 space-y-2";
+              card.innerHTML = `
+                <div class="flex justify-between items-center text-xs">
+                  <span class="font-medium text-[#f4f4f5]">${profileLabel} <span class="text-[10px] text-[#71717a] font-mono">(${fileExt.toUpperCase()})</span></span>
+                  <span class="text-[10px] text-[#71717a] font-mono">${fileName}</span>
+                </div>
+                <audio controls class="audio-player w-full h-8 accent-[#f4f4f5] bg-transparent">
+                  <source src="${audioUrl}" type="${mimeType}">
+                </audio>
+                <a href="${audioUrl}" download="${fileName}" class="inline-flex items-center justify-center w-full bg-[#18181b] hover:bg-[#27272a] border border-[#27272a] text-[#f4f4f5] text-[11px] font-medium py-1.5 rounded-lg transition-colors gap-1.5">
+                  <svg class="w-3.5 h-3.5 text-[#a1a1aa]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                  </svg>
+                  Baixar ${fileExt.toUpperCase()}
+                </a>
+              `;
+
+              const audioElement = card.querySelector('audio');
+              audioElement.addEventListener('play', function() {
+                document.querySelectorAll('audio.audio-player').forEach(player => {
+                  if (player !== audioElement) player.pause();
+                });
               });
-            });
 
-            audioList.appendChild(card);
+              audioList.appendChild(card);
+            }
           }
 
           loader.classList.add('hidden');
