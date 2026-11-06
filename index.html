@@ -132,7 +132,7 @@
             </label>
           </div>
 
-          <!-- Sub-Presets Musicais (exibidos somente ao escolher Música) -->
+          <!-- Sub-Presets Musicais -->
           <div id="musicPresetsContainer" class="hidden pt-1 space-y-1.5">
             <span class="text-[10px] text-[#71717a] font-medium uppercase tracking-wider">Perfil Dinâmico Musical</span>
             <div class="grid grid-cols-3 gap-2">
@@ -308,7 +308,6 @@
       setTimeout(() => toast.classList.add('hidden'), 4000);
     }
 
-    // Gerenciamento visual da Categoria (Voz/Geral vs Música)
     document.querySelectorAll('.category-card').forEach(card => {
       const radio = card.querySelector('.category-radio');
       card.addEventListener('click', () => {
@@ -333,7 +332,6 @@
       });
     });
 
-    // Gerenciamento visual dos Sub-Presets Musicais
     document.querySelectorAll('.preset-card').forEach(card => {
       const radio = card.querySelector('.preset-radio');
       card.addEventListener('click', () => {
@@ -352,7 +350,6 @@
       });
     });
 
-    // Gerenciamento visual do seletor múltiplo de formatos
     document.querySelectorAll('.format-card').forEach(card => {
       const checkbox = card.querySelector('.format-checkbox');
       card.addEventListener('click', () => {
@@ -549,25 +546,24 @@
         return;
       }
 
-      // Identifica a escolha de categoria e preset para ajustar attack e release
       const audioType = document.querySelector('input[name="audioType"]:checked').value;
-      let attackMs = 0.001; // 1ms
-      let releaseMs = 0.050; // 50ms
+      let attackMs = 0.001; 
+      let releaseMs = 0.050; 
 
       if (audioType === 'voice') {
-        attackMs = 0.005; // 5ms (preserva articulação da voz)
-        releaseMs = 0.150; // 150ms (evita bombeamento no silêncio da voz)
+        attackMs = 0.005; 
+        releaseMs = 0.150; 
       } else if (audioType === 'music') {
         const musicPreset = document.querySelector('input[name="musicPreset"]:checked').value;
         if (musicPreset === 'modern') {
-          attackMs = 0.001;  // 1ms
-          releaseMs = 0.050; // 50ms
+          attackMs = 0.001;  
+          releaseMs = 0.050; 
         } else if (musicPreset === 'smooth') {
-          attackMs = 0.010;  // 10ms
-          releaseMs = 0.200; // 200ms
+          attackMs = 0.010;  
+          releaseMs = 0.200; 
         } else if (musicPreset === 'tight') {
-          attackMs = 0.0005; // 0.5ms
-          releaseMs = 0.030; // 30ms
+          attackMs = 0.0005; 
+          releaseMs = 0.030; 
         }
       }
 
@@ -701,7 +697,7 @@
       link.click();
     });
 
-    // Processador de áudio com parâmetros dinâmicos de Attack e Release
+    // Processador de áudio com Limiter independente do ganho estático (True Attenuation)
     function processAudioPCM(buffer, currentLufs, targetLufs, ceilingDb, attackSec, releaseSec) {
       const numChannels = buffer.numberOfChannels;
       const length = buffer.length;
@@ -722,12 +718,17 @@
       let envelope = 0;
 
       for (let i = 0; i < length; i++) {
+        // Primeiro aplica o ganho estático de loudness em todas as amostras
         let maxSamplePeak = 0;
+        let scaledSamples = new Float32Array(numChannels);
+        
         for (let ch = 0; ch < numChannels; ch++) {
-          const s = Math.abs(buffer.getChannelData(ch)[i] * globalGain);
-          if (s > maxSamplePeak) maxSamplePeak = s;
+          scaledSamples[ch] = buffer.getChannelData(ch)[i] * globalGain;
+          const abs = Math.abs(scaledSamples[ch]);
+          if (abs > maxSamplePeak) maxSamplePeak = abs;
         }
 
+        // O limiter dinâmico só age se o sinal pós-ganho realmente ultrapassar o teto configurado
         if (maxSamplePeak > envelope) {
           envelope = attackCoeff * envelope + (1 - attackCoeff) * maxSamplePeak;
         } else {
@@ -740,7 +741,7 @@
         }
 
         for (let ch = 0; ch < numChannels; ch++) {
-          let sample = buffer.getChannelData(ch)[i] * globalGain * gainReduction;
+          let sample = scaledSamples[ch] * gainReduction;
           const s = Math.max(-1, Math.min(1, sample));
           channelsPCM[ch][i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
         }
