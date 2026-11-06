@@ -546,16 +546,16 @@
       if (audioType === 'music') {
         const musicPreset = document.querySelector('input[name="musicPreset"]:checked').value;
         if (musicPreset === 'modern') {
-          attackMs = 0.030;  // 30ms (Estilo SSL Bus Compressor)
-          releaseMs = 0.100; // 100ms (Release equilibrado para colar a mix)
+          attackMs = 0.001;  // 1ms
+          releaseMs = 0.050; // 50ms
         } else if (musicPreset === 'smooth') {
           attackMs = 0.010;  // 10ms
-          releaseMs = 0.050; // 50ms (Release mais rápido e transparente)
+          releaseMs = 0.200; // 200ms
         }
       }
 
       loader.classList.remove('hidden');
-      loaderText.innerText = "Processando perfis e convertendo áudios...";
+      loaderText.innerText = "Processando perfis e convertendo audios...";
       audioList.innerHTML = '';
       generatedBlobs = [];
 
