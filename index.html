@@ -226,7 +226,7 @@
             <svg class="w-4 h-4 text-[#a1a1aa]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
             </svg>
-            Baixar Pacote ZIP (Todos os Perfis)
+            Baixar Pacote ZIP (Todos os Arquivos)
           </button>
         </div>
       </div>
@@ -497,55 +497,75 @@
               filePrefixKey = 'custom';
             }
 
-            // Processa o áudio bruto uma vez para este perfil
             const processedPcm = processAudioPCM(audioBuffer, detectedLufs, targetLufs, ceilingTp);
 
-            // Para cada formato selecionado (wav, mp3 ou ambos), gera o arquivo correspondente
-            for (const format of selectedFormats) {
-              let finalBlob;
-              let fileExt = format;
-              let mimeType = format === 'mp3' ? 'audio/mpeg' : 'audio/wav';
+            // Gera sempre o áudio WAV (sem perdas) para o player e para o download WAV
+            const wavBlob = encodeWav(processedPcm, audioBuffer.sampleRate, audioBuffer.numberOfChannels);
+            const playerAudioUrl = URL.createObjectURL(wavBlob);
+            const baseFileName = `${originalFile.name.split('.')[0]}_${filePrefixKey}_${lufsSuffix}`;
 
-              if (format === 'mp3' && typeof lamejs !== 'undefined') {
-                finalBlob = encodeMp3(processedPcm, audioBuffer.sampleRate, audioBuffer.numberOfChannels);
-              } else {
-                fileExt = 'wav';
-                mimeType = 'audio/wav';
-                finalBlob = encodeWav(processedPcm, audioBuffer.sampleRate, audioBuffer.numberOfChannels);
-              }
+            let downloadButtonsHtml = '';
 
-              const audioUrl = URL.createObjectURL(finalBlob);
-              const fileName = `${originalFile.name.split('.')[0]}_${filePrefixKey}_${lufsSuffix}.${fileExt}`;
-
-              generatedBlobs.push({ name: fileName, blob: finalBlob });
-
-              const card = document.createElement('div');
-              card.className = "bg-[#09090b] border border-[#27272a] rounded-xl p-3 space-y-2";
-              card.innerHTML = `
-                <div class="flex justify-between items-center text-xs">
-                  <span class="font-medium text-[#f4f4f5]">${profileLabel} <span class="text-[10px] text-[#71717a] font-mono">(${fileExt.toUpperCase()})</span></span>
-                  <span class="text-[10px] text-[#71717a] font-mono">${fileName}</span>
-                </div>
-                <audio controls class="audio-player w-full h-8 accent-[#f4f4f5] bg-transparent">
-                  <source src="${audioUrl}" type="${mimeType}">
-                </audio>
-                <a href="${audioUrl}" download="${fileName}" class="inline-flex items-center justify-center w-full bg-[#18181b] hover:bg-[#27272a] border border-[#27272a] text-[#f4f4f5] text-[11px] font-medium py-1.5 rounded-lg transition-colors gap-1.5">
+            // Se WAV estiver selecionado
+            if (selectedFormats.includes('wav')) {
+              const wavFileName = `${baseFileName}.wav`;
+              generatedBlobs.push({ name: wavFileName, blob: wavBlob });
+              
+              downloadButtonsHtml += `
+                <a href="${playerAudioUrl}" download="${wavFileName}" class="flex-1 inline-flex items-center justify-center bg-[#18181b] hover:bg-[#27272a] border border-[#27272a] text-[#f4f4f5] text-[11px] font-medium py-1.5 rounded-lg transition-colors gap-1.5">
                   <svg class="w-3.5 h-3.5 text-[#a1a1aa]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
                   </svg>
-                  Baixar ${fileExt.toUpperCase()}
+                  Baixar WAV
                 </a>
               `;
-
-              const audioElement = card.querySelector('audio');
-              audioElement.addEventListener('play', function() {
-                document.querySelectorAll('audio.audio-player').forEach(player => {
-                  if (player !== audioElement) player.pause();
-                });
-              });
-
-              audioList.appendChild(card);
             }
+
+            // Se MP3 estiver selecionado
+            if (selectedFormats.includes('mp3')) {
+              let mp3Blob;
+              if (typeof lamejs !== 'undefined') {
+                mp3Blob = encodeMp3(processedPcm, audioBuffer.sampleRate, audioBuffer.numberOfChannels);
+              } else {
+                mp3Blob = wavBlob;
+              }
+              const mp3Url = URL.createObjectURL(mp3Blob);
+              const mp3FileName = `${baseFileName}.mp3`;
+              generatedBlobs.push({ name: mp3FileName, blob: mp3Blob });
+
+              downloadButtonsHtml += `
+                <a href="${mp3Url}" download="${mp3FileName}" class="flex-1 inline-flex items-center justify-center bg-[#18181b] hover:bg-[#27272a] border border-[#27272a] text-[#f4f4f5] text-[11px] font-medium py-1.5 rounded-lg transition-colors gap-1.5">
+                  <svg class="w-3.5 h-3.5 text-[#a1a1aa]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                  </svg>
+                  Baixar MP3
+                </a>
+              `;
+            }
+
+            const card = document.createElement('div');
+            card.className = "bg-[#09090b] border border-[#27272a] rounded-xl p-3 space-y-2.5";
+            card.innerHTML = `
+              <div class="flex justify-between items-center text-xs">
+                <span class="font-medium text-[#f4f4f5]">${profileLabel}</span>
+                <span class="text-[10px] text-[#71717a] font-mono">${baseFileName}</span>
+              </div>
+              <audio controls class="audio-player w-full h-8 accent-[#f4f4f5] bg-transparent">
+                <source src="${playerAudioUrl}" type="audio/wav">
+              </audio>
+              <div class="flex items-center gap-2 pt-0.5">
+                ${downloadButtonsHtml}
+              </div>
+            `;
+
+            const audioElement = card.querySelector('audio');
+            audioElement.addEventListener('play', function() {
+              document.querySelectorAll('audio.audio-player').forEach(player => {
+                if (player !== audioElement) player.pause();
+              });
+            });
+
+            audioList.appendChild(card);
           }
 
           loader.classList.add('hidden');
