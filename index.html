@@ -1,797 +1,330 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Loudness Converter & Audio Normalizer Online – Free LUFS & True Peak Limiter</title>
-  <meta name="description" content="Free online loudness converter and audio normalizer with transparent True Peak Limiter. Match Spotify (-14 LUFS), YouTube, Apple Music & EBU R128 standards fast and privately in your browser." />
-  <meta name="keywords" content="loudness converter, audio normalizer online, lufs normalizer, true peak limiter, online audio mastering, spotify loudness converter, youtube audio normalizer, ebu r128 online, loudness matcher, fabfilter limiter online, auto gain audio, mp3 loudness adjust, wav normalizer free" />
-  <meta name="robots" content="index, follow" />
-  <meta property="og:title" content="Loudness Converter & Audio Normalizer Online" />
-  <meta property="og:description" content="Normalize your audio to -14 LUFS, -16 LUFS or custom targets with integrated True Peak Limiter." />
-  <meta property="og:type" content="website" />
-  
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-  <!-- LameJS para codificação MP3 embutida -->
-  <script src="https://cdn.jsdelivr.net/npm/lamejs@1.2.1/lame.min.js"></script>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- Fallback da CSP. O ideal é enviar via cabeçalho HTTP (veja _headers), que também permite frame-ancestors. -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; media-src 'self' blob:; worker-src 'self'; connect-src 'self'; font-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'; require-trusted-types-for 'script'; trusted-types loudness">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
 
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
-    body {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-      background-color: #09090b;
-      color: #f4f4f5;
-    }
-    .profile-card { transition: all 0.15s ease; }
-    .profile-card:hover { border-color: #3f3f46; }
-    .profile-card.selected { border-color: #f4f4f5; background-color: #18181b; }
-    input[type=range] { accent-color: #f4f4f5; }
-    
-    .ad-sidebar {
-      width: 160px;
-      min-height: 600px;
-      background-color: #121215;
-      border: 1px dashed #27272a;
-      border-radius: 12px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      color: #71717a;
-      font-size: 11px;
-      text-align: center;
-      padding: 10px;
-    }
-    @media (max-width: 1024px) {
-      .ad-sidebar {
-        display: none;
-      }
-    }
-  </style>
+  <title>Normalizador de Loudness Online – LUFS e True Peak grátis</title>
+  <meta name="description" content="Normalize seu áudio para Spotify e YouTube (-14 LUFS), Apple Music (-16 LUFS) e TV (EBU R128 -23 LUFS) com limiter True Peak. Processamento 100% no navegador: seus arquivos nunca são enviados.">
+  <link rel="canonical" href="https://SEU-DOMINIO.com/">
+  <meta name="robots" content="index, follow">
+  <meta name="theme-color" content="#0a0a0c">
+  <meta name="color-scheme" content="dark">
+
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="pt_BR">
+  <meta property="og:url" content="https://SEU-DOMINIO.com/">
+  <meta property="og:title" content="Normalizador de Loudness Online – LUFS e True Peak">
+  <meta property="og:description" content="Ajuste seu áudio para -14, -16, -23 LUFS ou um alvo próprio, com limiter True Peak. Grátis e privado.">
+  <meta property="og:image" content="https://SEU-DOMINIO.com/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "Loudness Converter",
+    "applicationCategory": "MultimediaApplication",
+    "operatingSystem": "Any (navegador)",
+    "inLanguage": "pt-BR",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "BRL" },
+    "description": "Normalizador de loudness (LUFS) com limiter True Peak que roda no navegador."
+  }
+  </script>
+
+  <script src="vendor/jszip.min.js" defer></script>
+  <script src="app.js" defer></script>
 </head>
-<body class="min-h-screen flex flex-col items-center justify-center p-4 antialiased">
+<body>
+  <a class="skip-link" href="#converter">Pular para o conversor</a>
 
-  <div class="w-full max-w-6xl flex items-start justify-center gap-6 my-6">
-    
-    <!-- Banner Lateral Esquerdo (AdSense) -->
-    <aside class="ad-sidebar hidden lg:flex shrink-0">
-      <span class="uppercase tracking-wider text-[10px] text-[#52525b] mb-2">Anúncio</span>
-      <p class="text-[10px] text-[#52525b]">Espaço 160x600<br>AdSense / Banner</p>
+  <header class="site-header">
+    <div class="container site-header__inner">
+      <a class="brand" href="./" aria-label="Loudness Converter — página inicial">
+        <svg class="brand__mark" viewBox="0 0 24 24" aria-hidden="true">
+          <rect x="2" y="9" width="3" height="6" rx="1.5"/><rect x="7" y="5" width="3" height="14" rx="1.5"/>
+          <rect x="12" y="2" width="3" height="20" rx="1.5"/><rect x="17" y="7" width="3" height="10" rx="1.5"/>
+        </svg>
+        <span>Loudness<span class="brand__dim">Converter</span></span>
+      </a>
+      <span class="pill">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 11V8a5 5 0 0 1 10 0v3M6 11h12v10H6z"/></svg>
+        Processado no seu dispositivo
+      </span>
+    </div>
+  </header>
+
+  <div class="container layout">
+    <aside class="ad-rail" aria-label="Publicidade">
+      <span class="ad-label">Publicidade</span>
+      <div class="ad-slot ad-slot--rail"></div>
     </aside>
 
-    <!-- Aplicativo Central -->
-    <main class="w-full max-w-lg bg-[#121215] border border-[#27272a] rounded-2xl p-6 sm:p-8 shadow-2xl shrink-0">
-      <header class="mb-6 text-center">
-        <h1 class="text-xl font-medium tracking-tight text-[#f4f4f5]">Loudness Converter</h1>
-        <p class="text-xs text-[#a1a1aa] mt-1">Normalização dinâmica profissional de áudio (ITU-R BS.1770-4)</p>
-      </header>
+    <main class="main">
+      <section class="hero">
+        <p class="eyebrow">ITU-R BS.1770-4 · EBU R128 · True Peak</p>
+        <h1>Normalize o loudness do seu áudio para qualquer plataforma</h1>
+        <p class="lead">Medição LUFS real com K-weighting, limiter true peak com lookahead e exportação em WAV ou MP3. Nada é enviado para servidores.</p>
+      </section>
 
-      <div id="toast" class="hidden mb-4 p-3 rounded-xl text-xs text-center border bg-[#18181b] border-[#3f3f46] text-[#e4e4e7] transition-all"></div>
+      <div class="panel" id="converter" tabindex="-1">
+        <ol class="steps" aria-label="Etapas">
+          <li class="step is-active" data-step="1"><span class="step__n">1</span>Arquivo</li>
+          <li class="step" data-step="2"><span class="step__n">2</span>Ajustes</li>
+          <li class="step" data-step="3"><span class="step__n">3</span>Download</li>
+        </ol>
 
-      <section id="dropzone" class="relative border border-dashed border-[#27272a] hover:border-[#3f3f46] rounded-xl p-8 text-center cursor-pointer transition-colors bg-[#09090b]/40">
-        <input type="file" id="fileInput" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" accept="audio/*">
-        <div class="space-y-2 pointer-events-none">
-          <svg class="w-6 h-6 mx-auto text-[#71717a]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 4.5v15m7.5-7.5h-15"/>
-          </svg>
-          <p class="text-xs font-medium text-[#e4e4e7]">Selecione ou arraste um arquivo de áudio</p>
-          <p class="text-[10px] text-[#71717a]">WAV, MP3, FLAC, AAC, OGG</p>
+        <div id="notice" class="notice" role="status" aria-live="polite" hidden></div>
+
+        <section id="dropzone" class="dropzone">
+          <input id="fileInput" type="file" class="sr-only"
+                 accept=".wav,.mp3,.flac,.ogg,.oga,.opus,.m4a,.aac,.aif,.aiff,audio/*">
+          <label for="fileInput" class="dropzone__inner">
+            <span class="dropzone__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M12 16V4m0 0L7 9m5-5 5 5M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+            </span>
+            <span class="dropzone__title">Arraste um arquivo de áudio ou <span class="link">escolha no computador</span></span>
+            <span class="dropzone__hint">WAV, FLAC, MP3, AAC/M4A, OGG/Opus, AIFF · até 250 MB · até 30 min</span>
+          </label>
+        </section>
+
+        <section id="progress" class="progress" hidden>
+          <div class="progress__head">
+            <span id="progressLabel">Lendo arquivo…</span>
+            <span id="progressPct" class="mono">0%</span>
+          </div>
+          <div id="progressBar" class="progress__track" role="progressbar" aria-labelledby="progressLabel"
+               aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+            <div id="progressFill" class="progress__fill"></div>
+          </div>
+        </section>
+
+        <section id="workspace" hidden>
+          <div class="file-card">
+            <div class="file-card__head">
+              <div class="file-card__title">
+                <p id="fileName" class="file-name"></p>
+                <p id="fileMeta" class="file-meta"></p>
+              </div>
+              <button type="button" id="changeFileBtn" class="btn btn--ghost btn--sm">Trocar arquivo</button>
+            </div>
+
+            <div class="wave">
+              <canvas id="waveCanvas" role="img" aria-label="Forma de onda do arquivo original"></canvas>
+            </div>
+
+            <dl class="metrics">
+              <div class="metric"><dt>Integrated</dt><dd><span id="mLufs">—</span><small>LUFS</small></dd></div>
+              <div class="metric"><dt>True Peak</dt><dd><span id="mTp">—</span><small>dBTP</small></dd></div>
+              <div class="metric"><dt>Loudness Range</dt><dd><span id="mLra">—</span><small>LU</small></dd></div>
+              <div class="metric"><dt>Sample Peak</dt><dd><span id="mSp">—</span><small>dBFS</small></dd></div>
+            </dl>
+
+            <div class="scale" aria-hidden="true">
+              <div class="scale__track">
+                <span class="scale__tick" data-lufs="-24" data-name="ATSC"></span>
+                <span class="scale__tick" data-lufs="-23" data-name="R128"></span>
+                <span class="scale__tick" data-lufs="-16" data-name="Apple"></span>
+                <span class="scale__tick" data-lufs="-14" data-name="Spotify"></span>
+                <span id="scaleMarker" class="scale__marker"></span>
+              </div>
+              <div class="scale__labels"><span>−36</span><span>−24</span><span>−12</span><span>0 LUFS</span></div>
+            </div>
+
+            <div class="original-player">
+              <span class="label">Original</span>
+              <audio id="originalPlayer" controls preload="metadata"></audio>
+            </div>
+          </div>
+
+          <form id="settingsForm" class="settings" novalidate>
+            <fieldset class="field">
+              <legend class="field__label">Tipo de conteúdo</legend>
+              <div class="segmented">
+                <label class="segmented__item">
+                  <input type="radio" name="content" value="voice" class="sr-only" checked>
+                  <span class="segmented__ui"><strong>Voz / Geral</strong><small>Podcast, locução, comercial</small></span>
+                </label>
+                <label class="segmented__item">
+                  <input type="radio" name="content" value="music" class="sr-only">
+                  <span class="segmented__ui"><strong>Música</strong><small>Faixas e masters</small></span>
+                </label>
+              </div>
+            </fieldset>
+
+            <fieldset class="field" id="characterField" hidden>
+              <legend class="field__label">Caráter do limiter</legend>
+              <div class="segmented">
+                <label class="segmented__item">
+                  <input type="radio" name="character" value="modern" class="sr-only" checked>
+                  <span class="segmented__ui"><strong>Modern</strong><small>Release rápido, mais denso</small></span>
+                </label>
+                <label class="segmented__item">
+                  <input type="radio" name="character" value="smooth" class="sr-only">
+                  <span class="segmented__ui"><strong>Smooth</strong><small>Mais transparente</small></span>
+                </label>
+              </div>
+            </fieldset>
+
+            <fieldset class="field">
+              <legend class="field__label">Perfis de entrega <span class="field__hint">múltipla escolha</span></legend>
+              <div class="choices">
+                <label class="choice">
+                  <input type="checkbox" name="profile" value="streaming" class="sr-only" checked>
+                  <span class="choice__ui">
+                    <span class="check" aria-hidden="true"></span>
+                    <span class="choice__text"><strong>Streaming</strong><small>Spotify, YouTube, Tidal, Amazon</small></span>
+                    <span class="choice__value">−14 LUFS · −1 dBTP</span>
+                  </span>
+                </label>
+                <label class="choice">
+                  <input type="checkbox" name="profile" value="apple" class="sr-only">
+                  <span class="choice__ui">
+                    <span class="check" aria-hidden="true"></span>
+                    <span class="choice__text"><strong>Apple Music / Podcast</strong><small>Apple Music, Apple Podcasts</small></span>
+                    <span class="choice__value">−16 LUFS · −1 dBTP</span>
+                  </span>
+                </label>
+                <label class="choice">
+                  <input type="checkbox" name="profile" value="ebu" class="sr-only">
+                  <span class="choice__ui">
+                    <span class="check" aria-hidden="true"></span>
+                    <span class="choice__text"><strong>TV — EBU R128</strong><small>Broadcast padrão −23 LUFS</small></span>
+                    <span class="choice__value">−23 LUFS · −1 dBTP</span>
+                  </span>
+                </label>
+                <label class="choice">
+                  <input type="checkbox" name="profile" value="atsc" class="sr-only">
+                  <span class="choice__ui">
+                    <span class="check" aria-hidden="true"></span>
+                    <span class="choice__text"><strong>TV — ATSC A/85</strong><small>Broadcast EUA</small></span>
+                    <span class="choice__value">−24 LUFS · −2 dBTP</span>
+                  </span>
+                </label>
+                <label class="choice">
+                  <input type="checkbox" name="profile" value="custom" class="sr-only" aria-controls="customControls">
+                  <span class="choice__ui">
+                    <span class="check" aria-hidden="true"></span>
+                    <span class="choice__text"><strong>Personalizado</strong><small>Alvo e teto manuais</small></span>
+                    <span class="choice__value" id="customSummary">−12 LUFS · −1 dBTP</span>
+                  </span>
+                </label>
+              </div>
+
+              <div id="customControls" class="custom" hidden>
+                <div class="slider">
+                  <label for="sliderLufs">Alvo de loudness</label>
+                  <output id="outLufs" for="sliderLufs" class="mono">−12.0 LUFS</output>
+                  <input type="range" id="sliderLufs" min="-30" max="-6" step="0.5" value="-12">
+                </div>
+                <div class="slider">
+                  <label for="sliderTp">Teto true peak</label>
+                  <output id="outTp" for="sliderTp" class="mono">−1.0 dBTP</output>
+                  <input type="range" id="sliderTp" min="-3" max="0" step="0.1" value="-1">
+                </div>
+              </div>
+            </fieldset>
+
+            <fieldset class="field">
+              <legend class="field__label">Formatos <span class="field__hint">múltipla escolha</span></legend>
+              <div class="choices choices--row">
+                <label class="choice choice--compact">
+                  <input type="checkbox" name="format" value="wav24" class="sr-only" checked>
+                  <span class="choice__ui"><span class="check" aria-hidden="true"></span><span class="choice__text"><strong>WAV 24-bit</strong><small>Master / entrega</small></span></span>
+                </label>
+                <label class="choice choice--compact">
+                  <input type="checkbox" name="format" value="wav16" class="sr-only">
+                  <span class="choice__ui"><span class="check" aria-hidden="true"></span><span class="choice__text"><strong>WAV 16-bit</strong><small>Com dither TPDF</small></span></span>
+                </label>
+                <label class="choice choice--compact">
+                  <input type="checkbox" name="format" value="mp3" class="sr-only">
+                  <span class="choice__ui"><span class="check" aria-hidden="true"></span><span class="choice__text"><strong>MP3 320 kbps</strong><small>Compartilhamento</small></span></span>
+                </label>
+              </div>
+            </fieldset>
+
+            <button type="submit" id="processBtn" class="btn btn--primary btn--lg">Processar áudio</button>
+          </form>
+
+          <section id="results" class="results" hidden aria-labelledby="resultsTitle">
+            <div class="results__head">
+              <h2 id="resultsTitle">Arquivos prontos</h2>
+              <button type="button" id="zipBtn" class="btn btn--secondary btn--sm">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v12m0 0-5-5m5 5 5-5M4 20h16"/></svg>
+                Baixar tudo (.zip)
+              </button>
+            </div>
+            <div id="resultList" class="result-list"></div>
+            <p class="fine">Codecs com perdas (MP3/AAC) podem gerar overshoot de até ~1 dB na decodificação. Para MP3, use teto de −1 dBTP ou menor.</p>
+          </section>
+        </section>
+      </div>
+
+      <div class="ad-inline" aria-label="Publicidade">
+        <span class="ad-label">Publicidade</span>
+        <div class="ad-slot ad-slot--inline"></div>
+      </div>
+
+      <section class="info" aria-labelledby="howTitle">
+        <h2 id="howTitle">Como funciona</h2>
+        <div class="info__grid">
+          <article class="info__card">
+            <h3>Medição de verdade</h3>
+            <p>Loudness integrado conforme ITU-R BS.1770-4: filtro K-weighting, blocos de 400 ms e gating absoluto (−70 LUFS) e relativo (−10 LU). LRA conforme EBU Tech 3342.</p>
+          </article>
+          <article class="info__card">
+            <h3>Limiter true peak</h3>
+            <p>Detecção de picos inter-amostra com oversampling 4x e lookahead: o ganho já está reduzido quando o pico chega, sem clipping.</p>
+          </article>
+          <article class="info__card">
+            <h3>Privado por design</h3>
+            <p>Todo o processamento roda no seu navegador. O áudio nunca é enviado a nenhum servidor.</p>
+          </article>
         </div>
       </section>
 
-      <div id="loader" class="hidden py-12 text-center space-y-3">
-        <div class="w-5 h-5 border-2 border-[#f4f4f5] border-t-transparent rounded-full animate-spin mx-auto"></div>
-        <p id="loaderText" class="text-xs text-[#a1a1aa]">Analisando acústica do arquivo...</p>
-      </div>
-
-      <div id="mainInterface" class="hidden space-y-6">
-        <div class="space-y-2">
-          <div class="flex items-center justify-between">
-            <p id="fileName" class="text-xs font-medium text-[#f4f4f5] truncate max-w-[200px]">audio.wav</p>
-            <p id="fileMeta" class="text-[10px] text-[#71717a]">44.1 kHz • Estéreo</p>
-          </div>
-
-          <div class="bg-[#09090b] rounded-lg border border-[#27272a] p-2">
-            <canvas id="waveformCanvas" class="w-full h-12 rounded"></canvas>
-          </div>
-
-          <div class="flex justify-around pt-1 text-center">
-            <div>
-              <span class="text-[9px] text-[#71717a] uppercase tracking-wider block">Integrated LUFS</span>
-              <span id="origLufs" class="text-xs font-mono font-medium text-[#e4e4e7]">-14.0 LUFS</span>
-            </div>
-            <div>
-              <span class="text-[9px] text-[#71717a] uppercase tracking-wider block">True Peak</span>
-              <span id="origTp" class="text-xs font-mono font-medium text-[#e4e4e7]">-0.8 dBTP</span>
-            </div>
-            <div>
-              <span class="text-[9px] text-[#71717a] uppercase tracking-wider block">LRA</span>
-              <span id="origLra" class="text-xs font-mono font-medium text-[#e4e4e7]">5.4 LU</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Seletor de Tipo de Conteúdo (Geral vs Música + Sub-presets) -->
-        <div class="space-y-3">
-          <div class="flex justify-between items-center">
-            <span class="text-[11px] font-medium uppercase tracking-wider text-[#71717a]">Tipo de Conteúdo & Caráter</span>
-            <span class="text-[10px] text-[#52525b]">Ajuste fino de limiter</span>
-          </div>
-
-          <div class="grid grid-cols-2 gap-2">
-            <label class="category-card selected flex flex-col justify-center p-3 rounded-xl border border-[#f4f4f5] bg-[#18181b] cursor-pointer text-xs font-medium text-[#f4f4f5] transition-colors">
-              <input type="radio" name="audioType" value="voice" checked class="category-radio hidden">
-              <span class="font-medium text-xs">Geral / Voz</span>
-              <span class="text-[9px] text-[#71717a] mt-0.5">Locução, Podcast, Comercial</span>
-            </label>
-            <label class="category-card flex flex-col justify-center p-3 rounded-xl border border-[#27272a] bg-[#09090b] cursor-pointer text-xs font-medium text-[#a1a1aa] transition-colors">
-              <input type="radio" name="audioType" value="music" class="category-radio hidden">
-              <span class="font-medium text-xs">Música</span>
-              <span class="text-[9px] text-[#71717a] mt-0.5">Faixas & Masters</span>
-            </label>
-          </div>
-
-          <!-- Sub-Presets Musicais (Modern & Smooth) -->
-          <div id="musicPresetsContainer" class="hidden pt-1 space-y-1.5">
-            <span class="text-[10px] text-[#71717a] font-medium uppercase tracking-wider">Perfil Dinâmico Musical</span>
-            <div class="grid grid-cols-2 gap-2">
-              <label class="preset-card selected flex items-center justify-center p-2.5 rounded-lg border border-[#f4f4f5] bg-[#18181b] cursor-pointer transition-colors text-center">
-                <input type="radio" name="musicPreset" value="modern" checked class="preset-radio hidden">
-                <span class="text-xs font-medium text-[#f4f4f5]">Modern</span>
-              </label>
-              <label class="preset-card flex items-center justify-center p-2.5 rounded-lg border border-[#27272a] bg-[#09090b] cursor-pointer transition-colors text-center">
-                <input type="radio" name="musicPreset" value="smooth" class="preset-radio hidden">
-                <span class="text-xs font-medium text-[#a1a1aa]">Smooth</span>
-              </label>
-            </div>
-          </div>
-        </div>
-
-        <!-- Seletor Múltiplo de Formatos de Saída -->
-        <div class="space-y-2">
-          <div class="flex justify-between items-center">
-            <span class="text-[11px] font-medium uppercase tracking-wider text-[#71717a]">Formatos de Saída</span>
-            <span class="text-[10px] text-[#52525b]">Múltipla escolha</span>
-          </div>
-          <div class="grid grid-cols-2 gap-2">
-            <label class="format-card selected flex items-center p-3 rounded-xl border border-[#f4f4f5] bg-[#18181b] cursor-pointer text-xs font-medium text-[#f4f4f5] gap-2.5 transition-colors">
-              <input type="checkbox" value="wav" checked class="format-checkbox hidden">
-              <div class="format-check w-4 h-4 rounded border flex items-center justify-center bg-[#f4f4f5] border-[#f4f4f5]">
-                <svg class="w-3 h-3 text-[#09090b]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
-              </div>
-              <span>WAV (Sem Perdas)</span>
-            </label>
-            <label class="format-card flex items-center p-3 rounded-xl border border-[#27272a] bg-[#09090b] cursor-pointer text-xs font-medium text-[#a1a1aa] gap-2.5 transition-colors">
-              <input type="checkbox" value="mp3" class="format-checkbox hidden">
-              <div class="format-check w-4 h-4 rounded border border-[#3f3f46] flex items-center justify-center">
-                <svg class="w-3 h-3 text-[#09090b] hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
-              </div>
-              <span>MP3 (320 kbps)</span>
-            </label>
-          </div>
-        </div>
-
-        <div class="space-y-3">
-          <div class="flex justify-between items-center">
-            <span class="text-[11px] font-medium uppercase tracking-wider text-[#71717a]">Perfis de Entrega</span>
-            <span class="text-[10px] text-[#52525b]">Múltipla escolha</span>
-          </div>
-
-          <div class="grid grid-cols-1 gap-2">
-            <!-- Profile: Digital -->
-            <label class="profile-card selected flex items-center justify-between p-3 rounded-xl border border-[#27272a] bg-[#09090b] cursor-pointer">
-              <div class="flex items-center gap-3">
-                <input type="checkbox" value="digital" checked class="profile-checkbox hidden">
-                <div class="custom-check w-4 h-4 rounded border flex items-center justify-center bg-[#f4f4f5] border-[#f4f4f5]">
-                  <svg class="w-3 h-3 text-[#09090b]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
-                </div>
-                <div>
-                  <p class="text-xs font-medium text-[#f4f4f5]">Digital / Streaming</p>
-                  <p class="text-[10px] text-[#71717a]">Spotify, Apple Music, YouTube</p>
-                </div>
-              </div>
-              <span class="text-xs font-mono text-[#a1a1aa]">-14.0 LUFS</span>
-            </label>
-
-            <!-- Profile: TV EBU R128 -->
-            <label class="profile-card flex items-center justify-between p-3 rounded-xl border border-[#27272a] bg-[#09090b] cursor-pointer">
-              <div class="flex items-center gap-3">
-                <input type="checkbox" value="ebu_r128" class="profile-checkbox hidden">
-                <div class="custom-check w-4 h-4 rounded border border-[#3f3f46] flex items-center justify-center">
-                  <svg class="w-3 h-3 text-[#09090b] hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
-                </div>
-                <div>
-                  <p class="text-xs font-medium text-[#f4f4f5]">TV — EBU R128</p>
-                  <p class="text-[10px] text-[#71717a]">Transmissão Europa & Brasil</p>
-                </div>
-              </div>
-              <span class="text-xs font-mono text-[#a1a1aa]">-23.0 LUFS</span>
-            </label>
-
-            <!-- Profile: Advanced (Custom) -->
-            <div class="profile-card rounded-xl border border-[#27272a] bg-[#09090b] overflow-hidden">
-              <label class="flex items-center justify-between p-3 cursor-pointer">
-                <div class="flex items-center gap-3">
-                  <input type="checkbox" id="advancedCheck" value="advanced" class="profile-checkbox hidden">
-                  <div class="custom-check w-4 h-4 rounded border border-[#3f3f46] flex items-center justify-center">
-                    <svg class="w-3 h-3 text-[#09090b] hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
-                  </div>
-                  <div>
-                    <p class="text-xs font-medium text-[#f4f4f5]">Avançado (Custom)</p>
-                    <p class="text-[10px] text-[#71717a]">Parâmetros manuais</p>
-                  </div>
-                </div>
-                <span id="advLufsVal" class="text-xs font-mono text-[#a1a1aa]">-12.0 LUFS</span>
-              </label>
-
-              <div id="advancedControls" class="hidden px-4 pb-4 pt-1 border-t border-[#18181b] space-y-3 bg-[#0c0c0e]">
-                <div>
-                  <div class="flex justify-between text-[10px] text-[#a1a1aa] mb-1">
-                    <span>Alvo de Loudness</span>
-                    <span id="targetLufsLabel" class="font-mono text-[#f4f4f5]">-12.0 LUFS</span>
-                  </div>
-                  <input type="range" id="sliderLufs" min="-30" max="-6" step="0.5" value="-12.0" class="w-full h-1 bg-[#27272a] rounded-lg appearance-none">
-                </div>
-
-                <div>
-                  <div class="flex justify-between text-[10px] text-[#a1a1aa] mb-1">
-                    <span>True Peak</span>
-                    <span id="targetTpLabel" class="font-mono text-[#f4f4f5]">-1.0 dBTP</span>
-                  </div>
-                  <input type="range" id="sliderTp" min="-3.0" max="0.0" step="0.1" value="-1.0" class="w-full h-1 bg-[#27272a] rounded-lg appearance-none">
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <button id="processBtn" class="w-full bg-[#f4f4f5] hover:bg-[#e4e4e7] text-[#09090b] font-medium py-3 rounded-xl transition-colors text-xs shadow-sm">
-          Processar Áudios
-        </button>
-
-        <div id="resultsContainer" class="hidden space-y-4 pt-4 border-t border-[#27272a]">
-          <div class="flex justify-between items-center">
-            <span class="text-[11px] font-medium uppercase tracking-wider text-[#71717a]">Áudios Processados</span>
-            <span class="text-[10px] text-[#52525b]">Prontos para ouvir e baixar</span>
-          </div>
-
-          <div id="audioList" class="space-y-3"></div>
-
-          <button id="downloadZipBtn" class="w-full border border-[#3f3f46] hover:bg-[#18181b] text-[#f4f4f5] font-medium py-3 rounded-xl transition-colors text-xs flex items-center justify-center gap-2 mt-4">
-            <svg class="w-4 h-4 text-[#a1a1aa]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
-            </svg>
-            Baixar Pacote ZIP (Todos os Arquivos)
-          </button>
-        </div>
-      </div>
+      <section class="faq" aria-labelledby="faqTitle">
+        <h2 id="faqTitle">Perguntas frequentes</h2>
+        <details>
+          <summary>Qual loudness devo usar para o Spotify?</summary>
+          <p>O Spotify normaliza a reprodução em −14 LUFS e recomenda true peak de no máximo −1 dBTP (−2 dBTP se a faixa for mais alta que −14 LUFS).</p>
+        </details>
+        <details>
+          <summary>Qual a diferença entre sample peak e true peak?</summary>
+          <p>O sample peak é o maior valor entre as amostras. O true peak estima o pico real do sinal analógico reconstruído entre as amostras, que pode ser maior e causar distorção na conversão ou em codecs.</p>
+        </details>
+        <details>
+          <summary>Meu arquivo é enviado para algum lugar?</summary>
+          <p>Não. A decodificação, a análise e a exportação acontecem no seu dispositivo.</p>
+        </details>
+        <details>
+          <summary>Por que exportar em 24-bit?</summary>
+          <p>Mantém resolução máxima para entrega ou masterização. Use 16-bit (com dither) para CD ou quando a plataforma exigir.</p>
+        </details>
+      </section>
     </main>
 
-    <!-- Banner Lateral Direito (AdSense) -->
-    <aside class="ad-sidebar hidden lg:flex shrink-0">
-      <span class="uppercase tracking-wider text-[10px] text-[#52525b] mb-2">Anúncio</span>
-      <p class="text-[10px] text-[#52525b]">Espaço 160x600<br>AdSense / Banner</p>
+    <aside class="ad-rail" aria-label="Publicidade">
+      <span class="ad-label">Publicidade</span>
+      <div class="ad-slot ad-slot--rail"></div>
     </aside>
-
   </div>
 
-  <script>
-    let audioBuffer = null;
-    let originalFile = null;
-    let generatedBlobs = [];
-    let detectedLufs = -14.0;
-
-    const fileInput = document.getElementById('fileInput');
-    const loader = document.getElementById('loader');
-    const loaderText = document.getElementById('loaderText');
-    const mainInterface = document.getElementById('mainInterface');
-    const advancedCheck = document.getElementById('advancedCheck');
-    const advancedControls = document.getElementById('advancedControls');
-    const sliderLufs = document.getElementById('sliderLufs');
-    const sliderTp = document.getElementById('sliderTp');
-    const toast = document.getElementById('toast');
-    const resultsContainer = document.getElementById('resultsContainer');
-    const audioList = document.getElementById('audioList');
-    const musicPresetsContainer = document.getElementById('musicPresetsContainer');
-
-    function showToast(msg) {
-      toast.innerText = msg;
-      toast.classList.remove('hidden');
-      setTimeout(() => toast.classList.add('hidden'), 4000);
-    }
-
-    document.querySelectorAll('.category-card').forEach(card => {
-      const radio = card.querySelector('.category-radio');
-      card.addEventListener('click', () => {
-        document.querySelectorAll('.category-card').forEach(c => {
-          c.classList.remove('border-[#f4f4f5]', 'bg-[#18181b]');
-          c.classList.add('border-[#27272a]', 'bg-[#09090b]');
-          c.querySelector('span').classList.remove('text-[#f4f4f5]');
-          c.querySelector('span').classList.add('text-[#a1a1aa]');
-        });
-
-        radio.checked = true;
-        card.classList.add('border-[#f4f4f5]', 'bg-[#18181b]');
-        card.classList.remove('border-[#27272a]', 'bg-[#09090b]');
-        card.querySelector('span').classList.add('text-[#f4f4f5]');
-        card.querySelector('span').classList.remove('text-[#a1a1aa]');
-
-        if (radio.value === 'music') {
-          musicPresetsContainer.classList.remove('hidden');
-        } else {
-          musicPresetsContainer.classList.add('hidden');
-        }
-      });
-    });
-
-    document.querySelectorAll('.preset-card').forEach(card => {
-      const radio = card.querySelector('.preset-radio');
-      card.addEventListener('click', () => {
-        document.querySelectorAll('.preset-card').forEach(p => {
-          p.classList.remove('border-[#f4f4f5]', 'bg-[#18181b]');
-          p.classList.add('border-[#27272a]', 'bg-[#09090b]');
-          p.querySelector('span').classList.remove('text-[#f4f4f5]');
-          p.querySelector('span').classList.add('text-[#a1a1aa]');
-        });
-
-        radio.checked = true;
-        card.classList.add('border-[#f4f4f5]', 'bg-[#18181b]');
-        card.classList.remove('border-[#27272a]', 'bg-[#09090b]');
-        card.querySelector('span').classList.add('text-[#f4f4f5]');
-        card.querySelector('span').classList.remove('text-[#a1a1aa]');
-      });
-    });
-
-    document.querySelectorAll('.format-card').forEach(card => {
-      const checkbox = card.querySelector('.format-checkbox');
-      card.addEventListener('click', () => {
-        checkbox.checked = !checkbox.checked;
-        const icon = card.querySelector('.format-check svg');
-        const box = card.querySelector('.format-check');
-        const textSpan = card.querySelector('span:last-child');
-
-        if (checkbox.checked) {
-          card.classList.add('border-[#f4f4f5]', 'bg-[#18181b]');
-          card.classList.remove('border-[#27272a]', 'bg-[#09090b]');
-          textSpan.classList.add('text-[#f4f4f5]');
-          textSpan.classList.remove('text-[#a1a1aa]');
-          box.classList.add('bg-[#f4f4f5]', 'border-[#f4f4f5]');
-          box.classList.remove('border-[#3f3f46]');
-          icon.classList.remove('hidden');
-        } else {
-          card.classList.remove('border-[#f4f4f5]', 'bg-[#18181b]');
-          card.classList.add('border-[#27272a]', 'bg-[#09090b]');
-          textSpan.classList.remove('text-[#f4f4f5]');
-          textSpan.classList.add('text-[#a1a1aa]');
-          box.classList.remove('bg-[#f4f4f5]', 'border-[#f4f4f5]');
-          box.classList.add('border-[#3f3f46]');
-          icon.classList.add('hidden');
-        }
-      });
-    });
-
-    fileInput.addEventListener('change', (e) => {
-      if (e.target.files.length) handleFile(e.target.files[0]);
-    });
-
-    document.querySelectorAll('.profile-card').forEach(card => {
-      const checkbox = card.querySelector('.profile-checkbox');
-      if (!checkbox) return;
-      
-      card.addEventListener('click', (e) => {
-        if (e.target.tagName === 'INPUT' && e.target.type === 'range') return;
-        
-        checkbox.checked = !checkbox.checked;
-        const icon = card.querySelector('.custom-check svg');
-        const box = card.querySelector('.custom-check');
-
-        if (checkbox.checked) {
-          card.classList.add('selected');
-          box.classList.add('bg-[#f4f4f5]', 'border-[#f4f4f5]');
-          icon.classList.remove('hidden');
-        } else {
-          card.classList.remove('selected');
-          box.classList.remove('bg-[#f4f4f5]', 'border-[#f4f4f5]');
-          icon.classList.add('hidden');
-        }
-
-        if (checkbox.id === 'advancedCheck') {
-          advancedControls.classList.toggle('hidden', !checkbox.checked);
-        }
-      });
-    });
-
-    sliderLufs.addEventListener('input', (e) => {
-      const val = parseFloat(e.target.value).toFixed(1);
-      document.getElementById('targetLufsLabel').innerText = `${val} LUFS`;
-      document.getElementById('advLufsVal').innerText = `${val} LUFS`;
-    });
-
-    sliderTp.addEventListener('input', (e) => {
-      document.getElementById('targetTpLabel').innerText = `${parseFloat(e.target.value).toFixed(1)} dBTP`;
-    });
-
-    function calculateIntegratedLufs(buffer) {
-      const channels = buffer.numberOfChannels;
-      const sr = buffer.sampleRate;
-      const samples = buffer.length;
-      
-      const dataCh0 = buffer.getChannelData(0);
-      const dataCh1 = channels > 1 ? buffer.getChannelData(1) : dataCh0;
-
-      const blockSize = Math.floor(sr * 0.4);
-      const hopSize = Math.floor(sr * 0.1);
-      const numBlocks = Math.floor((samples - blockSize) / hopSize);
-
-      if (numBlocks <= 0) return -14.0;
-
-      let blockEnergies = [];
-
-      for (let b = 0; b < numBlocks; b++) {
-        const start = b * hopSize;
-        let sum0 = 0, sum1 = 0;
-        for (let i = 0; i < blockSize; i++) {
-          const s0 = dataCh0[start + i];
-          const s1 = dataCh1[start + i];
-          sum0 += s0 * s0;
-          sum1 += s1 * s1;
-        }
-        let z0 = sum0 / blockSize;
-        let z1 = sum1 / blockSize;
-        let meanEnergy = z0 + z1;
-        blockEnergies.push(meanEnergy);
-      }
-
-      let absFiltered = blockEnergies.filter(e => 10 * Math.log10(e + 1e-12) - 0.691 > -70.0);
-      if (!absFiltered.length) absFiltered = blockEnergies;
-
-      let avgEnergy = absFiltered.reduce((a, b) => a + b, 0) / absFiltered.length;
-      let gammaAbs = 10 * Math.log10(avgEnergy + 1e-12) - 0.691;
-
-      let relativeThreshold = gammaAbs - 10.0;
-      let relFiltered = absFiltered.filter(e => (10 * Math.log10(e + 1e-12) - 0.691) > relativeThreshold);
-      if (!relFiltered.length) relFiltered = absFiltered;
-
-      let finalEnergy = relFiltered.reduce((a, b) => a + b, 0) / relFiltered.length;
-      let integratedLufs = 10 * Math.log10(finalEnergy + 1e-12) - 0.691;
-
-      return isNaN(integratedLufs) ? -14.0 : integratedLufs;
-    }
-
-    async function handleFile(file) {
-      originalFile = file;
-      document.getElementById('dropzone').classList.add('hidden');
-      resultsContainer.classList.add('hidden');
-      loader.classList.remove('hidden');
-      loaderText.innerText = "Calculando Integrated Loudness (ITU-R BS.1770-4)...";
-
-      try {
-        const arrayBuffer = await file.arrayBuffer();
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
-
-        const sr = audioBuffer.sampleRate;
-        const channels = audioBuffer.numberOfChannels;
-        const data = audioBuffer.getChannelData(0);
-
-        let peak = 0;
-        for (let i = 0; i < data.length; i++) {
-          const abs = Math.abs(data[i]);
-          if (abs > peak) peak = abs;
-        }
-
-        detectedLufs = calculateIntegratedLufs(audioBuffer);
-        const truePeakDb = (20 * Math.log10(peak || 0.00001)).toFixed(1);
-
-        document.getElementById('fileName').innerText = file.name;
-        document.getElementById('fileMeta').innerText = `${(sr/1000).toFixed(1)} kHz • ${channels === 1 ? 'Mono' : 'Estéreo'}`;
-        document.getElementById('origLufs').innerText = `${detectedLufs.toFixed(1)} LUFS`;
-        document.getElementById('origTp').innerText = `${truePeakDb} dBTP`;
-        document.getElementById('origLra').innerText = `5.4 LU`;
-
-        drawWaveform(data);
-
-        loader.classList.add('hidden');
-        mainInterface.classList.remove('hidden');
-
-      } catch (err) {
-        showToast("Erro ao ler o arquivo de áudio. Certifique-se de usar um formato válido.");
-        loader.classList.add('hidden');
-        document.getElementById('dropzone').classList.remove('hidden');
-      }
-    }
-
-    function drawWaveform(data) {
-      const canvas = document.getElementById('waveformCanvas');
-      const ctx = canvas.getContext('2d');
-      canvas.width = canvas.offsetWidth;
-      canvas.height = canvas.offsetHeight;
-
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.fillStyle = '#f4f4f5';
-
-      const step = Math.ceil(data.length / canvas.width);
-      const amp = canvas.height / 2;
-
-      for (let i = 0; i < canvas.width; i++) {
-        let min = 1.0;
-        let max = -1.0;
-        for (let j = 0; j < step; j++) {
-          const datum = data[(i * step) + j];
-          if (datum < min) min = datum;
-          if (datum > max) max = datum;
-        }
-        ctx.fillRect(i, (1 + min) * amp, 1, Math.max(1, (max - min) * amp));
-      }
-    }
-
-    document.getElementById('processBtn').addEventListener('click', async () => {
-      const selectedInputs = Array.from(document.querySelectorAll('.profile-checkbox:checked'));
-      const selectedFormats = Array.from(document.querySelectorAll('.format-checkbox:checked')).map(cb => cb.value);
-
-      if (!selectedInputs.length) {
-        showToast("Selecione ao menos um perfil de entrega.");
-        return;
-      }
-      if (!selectedFormats.length) {
-        showToast("Selecione ao menos um formato de saída (WAV ou MP3).");
-        return;
-      }
-
-      const audioType = document.querySelector('input[name="audioType"]:checked').value;
-      let attackMs = 0.005; // Padrão voz
-      let releaseMs = 0.150; // Padrão voz
-
-      if (audioType === 'music') {
-        const musicPreset = document.querySelector('input[name="musicPreset"]:checked').value;
-        if (musicPreset === 'modern') {
-          attackMs = 0.001;  // 1ms
-          releaseMs = 0.050; // 50ms
-        } else if (musicPreset === 'smooth') {
-          attackMs = 0.010;  // 10ms
-          releaseMs = 0.200; // 200ms
-        }
-      }
-
-      loader.classList.remove('hidden');
-      loaderText.innerText = "Processando perfis e convertendo audios...";
-      audioList.innerHTML = '';
-      generatedBlobs = [];
-
-      setTimeout(() => {
-        try {
-          for (const input of selectedInputs) {
-            let targetLufs = -14.0;
-            let ceilingTp = -1.0;
-            let profileLabel = "";
-            let profileKey = input.value;
-            let lufsSuffix = "";
-            let filePrefixKey = profileKey;
-
-            if (profileKey === 'digital') { 
-              targetLufs = -14.0; 
-              ceilingTp = -1.0; 
-              profileLabel = "Streaming (-14.0 LUFS)"; 
-              lufsSuffix = "-14.0LUFS";
-            }
-            else if (profileKey === 'ebu_r128') { 
-              targetLufs = -23.0; 
-              ceilingTp = -1.0; 
-              profileLabel = "TV EBU R128 (-23.0 LUFS)"; 
-              lufsSuffix = "-23.0LUFS";
-            }
-            else if (profileKey === 'advanced') {
-              targetLufs = parseFloat(sliderLufs.value);
-              ceilingTp = parseFloat(sliderTp.value);
-              const formattedVal = targetLufs.toFixed(1);
-              profileLabel = `Personalizado (${formattedVal} LUFS)`;
-              lufsSuffix = `${formattedVal}LUFS`;
-              filePrefixKey = 'custom';
-            }
-
-            const processedPcm = processAudioPCM(audioBuffer, detectedLufs, targetLufs, ceilingTp, attackMs, releaseMs);
-
-            const wavBlob = encodeWav(processedPcm, audioBuffer.sampleRate, audioBuffer.numberOfChannels);
-            const playerAudioUrl = URL.createObjectURL(wavBlob);
-            const baseFileName = `${originalFile.name.split('.')[0]}_${filePrefixKey}_${lufsSuffix}`;
-
-            let downloadButtonsHtml = '';
-
-            if (selectedFormats.includes('wav')) {
-              const wavFileName = `${baseFileName}.wav`;
-              generatedBlobs.push({ name: wavFileName, blob: wavBlob });
-              
-              downloadButtonsHtml += `
-                <a href="${playerAudioUrl}" download="${wavFileName}" class="flex-1 inline-flex items-center justify-center bg-[#18181b] hover:bg-[#27272a] border border-[#27272a] text-[#f4f4f5] text-[11px] font-medium py-1.5 rounded-lg transition-colors gap-1.5">
-                  <svg class="w-3.5 h-3.5 text-[#a1a1aa]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
-                  </svg>
-                  Baixar WAV
-                </a>
-              `;
-            }
-
-            if (selectedFormats.includes('mp3')) {
-              let mp3Blob;
-              if (typeof lamejs !== 'undefined') {
-                mp3Blob = encodeMp3(processedPcm, audioBuffer.sampleRate, audioBuffer.numberOfChannels);
-              } else {
-                mp3Blob = wavBlob;
-              }
-              const mp3Url = URL.createObjectURL(mp3Blob);
-              const mp3FileName = `${baseFileName}.mp3`;
-              generatedBlobs.push({ name: mp3FileName, blob: mp3Blob });
-
-              downloadButtonsHtml += `
-                <a href="${mp3Url}" download="${mp3FileName}" class="flex-1 inline-flex items-center justify-center bg-[#18181b] hover:bg-[#27272a] border border-[#27272a] text-[#f4f4f5] text-[11px] font-medium py-1.5 rounded-lg transition-colors gap-1.5">
-                  <svg class="w-3.5 h-3.5 text-[#a1a1aa]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
-                  </svg>
-                  Baixar MP3
-                </a>
-              `;
-            }
-
-            const card = document.createElement('div');
-            card.className = "bg-[#09090b] border border-[#27272a] rounded-xl p-3 space-y-2.5";
-            card.innerHTML = `
-              <div class="flex justify-between items-center text-xs">
-                <span class="font-medium text-[#f4f4f5]">${profileLabel}</span>
-                <span class="text-[10px] text-[#71717a] font-mono">${baseFileName}</span>
-              </div>
-              <audio controls class="audio-player w-full h-8 accent-[#f4f4f5] bg-transparent">
-                <source src="${playerAudioUrl}" type="audio/wav">
-              </audio>
-              <div class="flex items-center gap-2 pt-0.5">
-                ${downloadButtonsHtml}
-              </div>
-            `;
-
-            const audioElement = card.querySelector('audio');
-            audioElement.addEventListener('play', function() {
-              document.querySelectorAll('audio.audio-player').forEach(player => {
-                if (player !== audioElement) player.pause();
-              });
-            });
-
-            audioList.appendChild(card);
-          }
-
-          loader.classList.add('hidden');
-          resultsContainer.classList.remove('hidden');
-
-        } catch (err) {
-          console.error(err);
-          showToast("Erro durante o processamento. Tente novamente.");
-          loader.classList.add('hidden');
-        }
-      }, 100);
-    });
-
-    document.getElementById('downloadZipBtn').addEventListener('click', async () => {
-      if (!generatedBlobs.length) return;
-
-      const zip = new JSZip();
-      generatedBlobs.forEach(item => {
-        zip.file(item.name, item.blob);
-      });
-
-      const content = await zip.generateAsync({ type: "blob" });
-      const link = document.createElement("a");
-      link.href = URL.createObjectURL(content);
-      link.download = `LoudnessConverter_Export.zip`;
-      link.click();
-    });
-
-    // Processador de áudio com True Attenuation e parâmetros customizados
-    function processAudioPCM(buffer, currentLufs, targetLufs, ceilingDb, attackSec, releaseSec) {
-      const numChannels = buffer.numberOfChannels;
-      const length = buffer.length;
-      const sampleRate = buffer.sampleRate;
-
-      const lufsDifference = targetLufs - currentLufs;
-      const globalGain = Math.pow(10, lufsDifference / 20);
-      const ceilingLinear = Math.pow(10, ceilingDb / 20);
-
-      const attackCoeff = Math.exp(-1.0 / (sampleRate * attackSec));
-      const releaseCoeff = Math.exp(-1.0 / (sampleRate * releaseSec));
-
-      const channelsPCM = [];
-      for (let ch = 0; ch < numChannels; ch++) {
-        channelsPCM.push(new Int16Array(length));
-      }
-
-      let envelope = 0;
-
-      for (let i = 0; i < length; i++) {
-        let maxSamplePeak = 0;
-        let scaledSamples = new Float32Array(numChannels);
-        
-        for (let ch = 0; ch < numChannels; ch++) {
-          scaledSamples[ch] = buffer.getChannelData(ch)[i] * globalGain;
-          const abs = Math.abs(scaledSamples[ch]);
-          if (abs > maxSamplePeak) maxSamplePeak = abs;
-        }
-
-        if (maxSamplePeak > envelope) {
-          envelope = attackCoeff * envelope + (1 - attackCoeff) * maxSamplePeak;
-        } else {
-          envelope = releaseCoeff * envelope + (1 - releaseCoeff) * maxSamplePeak;
-        }
-
-        let gainReduction = 1.0;
-        if (envelope > ceilingLinear) {
-          gainReduction = ceilingLinear / envelope;
-        }
-
-        for (let ch = 0; ch < numChannels; ch++) {
-          let sample = scaledSamples[ch] * gainReduction;
-          const s = Math.max(-1, Math.min(1, sample));
-          channelsPCM[ch][i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
-        }
-      }
-
-      return channelsPCM;
-    }
-
-    // Encoder WAV
-    function encodeWav(channelsPCM, sampleRate, numChannels) {
-      const length = channelsPCM[0].length;
-      const wavBuffer = new ArrayBuffer(44 + length * numChannels * 2);
-      const view = new DataView(wavBuffer);
-
-      function writeString(offset, string) {
-        for (let i = 0; i < string.length; i++) {
-          view.setUint8(offset + i, string.charCodeAt(i));
-        }
-      }
-
-      writeString(0, 'RIFF');
-      view.setUint32(4, 36 + length * numChannels * 2, true);
-      writeString(8, 'WAVE');
-      writeString(12, 'fmt ');
-      view.setUint32(16, 16, true);
-      view.setUint16(20, 1, true);
-      view.setUint16(22, numChannels, true);
-      view.setUint32(24, sampleRate, true);
-      view.setUint32(28, sampleRate * numChannels * 2, true);
-      view.setUint16(32, numChannels * 2, true);
-      view.setUint16(34, 16, true);
-      writeString(36, 'data');
-      view.setUint32(40, length * numChannels * 2, true);
-
-      let offset = 44;
-      for (let i = 0; i < length; i++) {
-        for (let ch = 0; ch < numChannels; ch++) {
-          view.setInt16(offset, channelsPCM[ch][i], true);
-          offset += 2;
-        }
-      }
-
-      return new Blob([wavBuffer], { type: 'audio/wav' });
-    }
-
-    // Encoder MP3 (via lamejs de forma segura)
-    function encodeMp3(channelsPCM, sampleRate, numChannels) {
-      const mp3encoder = new lamejs.Mp3Encoder(numChannels, sampleRate, 320);
-      const mp3Data = [];
-      const sampleBlockSize = 1152;
-      const length = channelsPCM[0].length;
-
-      for (let i = 0; i < length; i += sampleBlockSize) {
-        let leftChunk = channelsPCM[0].subarray(i, i + sampleBlockSize);
-        let rightChunk = numChannels > 1 ? channelsPCM[1].subarray(i, i + sampleBlockSize) : leftChunk;
-        
-        let mp3buf = mp3encoder.encodeBuffer(leftChunk, rightChunk);
-        if (mp3buf.length > 0) mp3Data.push(mp3buf);
-      }
-
-      let mp3buf = mp3encoder.flush();
-      if (mp3buf.length > 0) mp3Data.push(mp3buf);
-
-      return new Blob(mp3Data, { type: 'audio/mpeg' });
-    }
-  </script>
+  <footer class="site-footer">
+    <div class="container site-footer__inner">
+      <p>© <span id="year">2026</span> Loudness Converter</p>
+      <nav aria-label="Rodapé">
+        <a href="privacidade.html">Privacidade</a>
+        <a href="termos.html">Termos</a>
+        <a href="contato.html">Contato</a>
+      </nav>
+    </div>
+  </footer>
 </body>
 </html>
